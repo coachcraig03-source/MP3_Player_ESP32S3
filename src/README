@@ -1,0 +1,38 @@
+Here is code that worked on the ESP32 WROOM in Arduino IDE
+#include <Arduino.h>
+#include <PN5180.h>
+
+#define PN5180_NSS   4
+#define PN5180_BUSY  22
+#define PN5180_RST   27
+
+#define PN5180_MOSI  23
+#define PN5180_MISO  19
+#define PN5180_SCK   18
+
+PN5180 nfc(PN5180_NSS, PN5180_BUSY, PN5180_RST);
+
+void setup() {
+    Serial.begin(115200);
+    delay(500);
+    Serial.println("\n--- PN5180 Register Read Test ---");
+    delay(5000);
+    SPI.begin(PN5180_SCK, PN5180_MISO, PN5180_MOSI);
+
+    Serial.println("Calling nfc.begin()...");
+    nfc.begin();
+    Serial.println("PN5180 initialized.");
+
+    // Read a few known registers
+    uint8_t major = nfc.readRegister(0x00);   // VERSION_MAJOR
+    uint8_t minor = nfc.readRegister(0x01);   // VERSION_MINOR
+    uint8_t irq   = nfc.readRegister(0x0C);   // IRQ_STATUS
+    uint8_t sys   = nfc.readRegister(0x24);   // SYSTEM_STATUS
+
+    Serial.printf("VERSION_MAJOR: 0x%02X\n", major);
+    Serial.printf("VERSION_MINOR: 0x%02X\n", minor);
+    Serial.printf("IRQ_STATUS:    0x%02X\n", irq);
+    Serial.printf("SYSTEM_STATUS: 0x%02X\n", sys);
+}
+
+void loop() {}
