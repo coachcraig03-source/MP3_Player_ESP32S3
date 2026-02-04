@@ -47,10 +47,34 @@ static bool isBusyStuck(unsigned long waitMs) {
   return digitalRead(PN5180_BUSY) == HIGH;
 }
 
+// Read user data from NTAG215 (24 bytes from pages 4-9)
+bool readUserData(uint8_t *buffer, uint8_t numBytes) {
+  // NTAG215 pages are 4 bytes each
+  // mifareBlockRead reads 16 bytes (4 pages) at a time
+  uint8_t startPage = 4;
+  uint8_t numReads = (numBytes + 15) / 16;  // Round up to 16-byte blocks
+  
+  for (uint8_t i = 0; i < numReads; i++) {
+    uint8_t blockData[16];
+    
+    // Read 16 bytes starting from page (startPage + i*4)
+    if (!nfc.mifareBlockRead(startPage + (i * 4), blockData)) {
+      return false;
+    }
+    
+    // Copy up to numBytes
+    for (uint8_t j = 0; j < 16 && (i*16 + j) < numBytes; j++) {
+      buffer[i*16 + j] = blockData[j];
+    }
+  }
+  
+  return true;
+}
+
 void setup() {
   Serial.begin(115200);
   delay(4000);
-  Serial.println("PN5180 ISO14443 Demo");
+  Serial.println("PN5180 ISO14443 Demo with User Data Read");
 
   nfc.begin();
 
@@ -103,6 +127,8 @@ void setup() {
     Serial.println("   - Wrong register addresses for this firmware");
   }
   Serial.println();
+  Serial.println("Wave NTAG215 tag to read UID and 24 bytes of user data...");
+  Serial.println();
 }
 
 int8_t readCardSerialWithWupa(uint8_t *buffer) {
@@ -136,16 +162,32 @@ void loop() {
     nfc.reset();
     delay(10);
     nfc.setupRF();
-
     delay(200);
     return;
   }
 
+  // Print UID
   Serial.print("UID: ");
   for (int i = 0; i < uidLen; i++) {
     Serial.printf("%02X ", uid[i]);
   }
   Serial.println();
+
+  // Read 24 characters of user data
+  uint8_t userData[48];
+  if (readUserData(userData, 48)) {
+    Serial.print("Data: ");
+    for (int i = 0; i < 48; i++) {
+      if (userData[i] >= 32 && userData[i] <= 126) {
+        Serial.print((char)userData[i]);  // Printable ASCII
+      } else {
+        Serial.print('.');  // Non-printable
+      }
+    }
+    Serial.println();
+  } else {
+    Serial.println("Failed to read user data");
+  }
 
   delay(1000);
 }
