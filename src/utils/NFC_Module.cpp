@@ -55,6 +55,29 @@ void NFC_Module::begin() {
   Serial.println();
 }
 
+void NFC_Module::dumpRegisters() {
+  uint32_t val;
+
+  Serial.println("---- PN5180 Registers ----");
+
+  nfc->readRegister(IRQ_STATUS, &val);
+  Serial.printf("IRQ_STATUS    = 0x%08X\n", val);
+
+  nfc->readRegister(RX_STATUS, &val);
+  Serial.printf("RX_STATUS     = 0x%08X\n", val);
+
+  nfc->readRegister(RF_STATUS, &val);
+  Serial.printf("RF_STATUS     = 0x%08X\n", val);
+
+  nfc->readRegister(SYSTEM_STATUS, &val);
+  Serial.printf("SYSTEM_STATUS = 0x%08X\n", val);
+
+  nfc->readRegister(MEMP_STATS, &val);
+  Serial.printf("MEMP_STATS    = 0x%08X\n", val);
+
+  Serial.println("---------------------------");
+}
+
 int8_t NFC_Module::readCardSerialWithWupa(uint8_t *buffer) {
   uint8_t response[10] = {0};
 
@@ -78,27 +101,57 @@ int8_t NFC_Module::readCardSerialWithWupa(uint8_t *buffer) {
 
   return uidLength;
 }
+bool NFC_Module::readUserData(uint8_t *buffer, uint8_t numBytes) {
+  uint8_t startPage = 4;
+  uint8_t numReads = (numBytes + 15) / 16;
 
+  for (uint8_t i = 0; i < numReads; i++) {
+    uint8_t blockData[16];
 
-void NFC_Module::dumpRegisters() {
-  uint32_t val;
+    if (!nfc->mifareBlockRead(startPage + (i * 4), blockData)) {
+      return false;
+    }
 
-  Serial.println("---- PN5180 Registers ----");
+    for (uint8_t j = 0; j < 16 && (i*16 + j) < numBytes; j++) {
+      buffer[i*16 + j] = blockData[j];
+    }
+  }
 
-  nfc->readRegister(IRQ_STATUS, &val);
-  Serial.printf("IRQ_STATUS    = 0x%08X\n", val);
+  return true;
+}
 
-  nfc->readRegister(RX_STATUS, &val);
-  Serial.printf("RX_STATUS     = 0x%08X\n", val);
+void NFC_Module::runPNTest(int count) {
+  for (int i = 0; i < count; i++) {
+    Serial.printf("\n--- PN Read %d/%d ---\n", i + 1, count);
 
-  nfc->readRegister(RF_STATUS, &val);
-  Serial.printf("RF_STATUS     = 0x%08X\n", val);
+    uint8_t uid[8];
+    int8_t uidLen = readCardSerialWithWupa(uid);
 
-  nfc->readRegister(SYSTEM_STATUS, &val);
-  Serial.printf("SYSTEM_STATUS = 0x%08X\n", val);
+    if (uidLen <= 0) {
+      Serial.println("No card found");
+      delay(200);
+      continue;
+    }
 
-  nfc->readRegister(MEMP_STATS, &val);
-  Serial.printf("MEMP_STATS    = 0x%08X\n", val);
+    Serial.print("UID: ");
+    for (int j = 0; j < uidLen; j++) {
+      Serial.printf("%02X ", uid[j]);
+    }
+    Serial.println();
 
-  Serial.println("---------------------------");
+    // Read 48 bytes of user data
+    uint8_t userData[48];
+    if (readUserData(userData, 48)) {
+      Serial.print("Data: ");
+      for (int k = 0; k < 48; k++) {
+        char c = userData[k];
+        Serial.print((c >= 32 && c <= 126) ? c : '.');
+      }
+      Serial.println();
+    } else {
+      Serial.println("Failed to read user data");
+    }
+
+    delay(300);
+  }
 }

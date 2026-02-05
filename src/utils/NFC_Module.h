@@ -11,12 +11,15 @@ public:
   void begin();
   void dumpRegisters();
 
-  // NEW: card serial reader
-  int8_t readCardSerialWithWupa(uint8_t *buffer);
+  bool readUserData(uint8_t *buffer, uint8_t numBytes);
 
-  PN5180ISO14443* getNFC() { return nfc; }
+
+  // NEW: run N reads
+  void runPNTest(int count);
 
 private:
+  int8_t readCardSerialWithWupa(uint8_t *buffer);
+
   uint8_t _cs, _busy, _rst;
   PN5180ISO14443 *nfc;
 };
