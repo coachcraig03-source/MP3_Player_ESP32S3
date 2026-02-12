@@ -35,10 +35,19 @@ void setup() {
   SPI.begin(SPI1_SCK, SPI1_MISO, SPI1_MOSI);
   delay(100);
   
+  // Hold VS1053 in reset during PN5180 init
+  pinMode(VS1053_RST, OUTPUT);
+  digitalWrite(VS1053_RST, LOW);  // Keep VS1053 off
+  delay(100);
+
   // Initialize NFC module
   Serial.println("\nInitializing PN5180 NFC...");
   nfcModule.begin();
-  
+  delay(100);
+
+  // Now release VS1053 and initialize it
+  digitalWrite(VS1053_RST, HIGH);
+  delay(100);
   // Initialize VS1053 module
   Serial.println("\nInitializing VS1053 Audio...");
   audioModule.begin();
@@ -46,7 +55,7 @@ void setup() {
 // Manual CS test
 Serial.println("\nManual CS test - watch GPIO 9:");
 pinMode(9, OUTPUT);
-for (int i = 0; i < 20; i++) {
+for (int i = 0; i < 6; i++) {
   digitalWrite(9, LOW);
   Serial.println("CS LOW");
   delay(500);
