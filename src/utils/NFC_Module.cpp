@@ -120,6 +120,35 @@ bool NFC_Module::readUserData(uint8_t *buffer, uint8_t numBytes) {
   return true;
 }
 
+int NFC_Module::extractText(const uint8_t *ndefData, char *textOut, uint8_t maxLen) {
+  // NDEF structure with record header:
+  // Byte 0: 0x03 (message start)
+  // Byte 5: 0x54 ('T' for text record type)
+  // Byte 9+: Text data starts here
+  
+  if (ndefData[0] != 0x03) {
+    return 0;  // Not NDEF
+  }
+  
+  // Check if byte 5 is 'T' (text record type)
+  if (ndefData[5] != 0x54) {
+    return 0;  // Not a text record
+  }
+  
+  // Text starts at byte 9 (after "en")
+  int textStart = 9;
+  int textLen = 0;
+  
+  for (int i = textStart; i < maxLen + textStart && ndefData[i] != 0x00 && ndefData[i] != 0xFE; i++) {
+    if (ndefData[i] >= 32 && ndefData[i] <= 126) {
+      textOut[textLen++] = ndefData[i];
+    }
+  }
+  
+  textOut[textLen] = '\0';
+  return textLen;
+}
+
 void NFC_Module::runPNTest(int count) {
   for (int i = 0; i < count; i++) {
     Serial.printf("\n--- PN Read %d/%d ---\n", i + 1, count);
@@ -142,12 +171,23 @@ void NFC_Module::runPNTest(int count) {
     // Read 48 bytes of user data
     uint8_t userData[48];
     if (readUserData(userData, 48)) {
-      Serial.print("Data: ");
-      for (int k = 0; k < 48; k++) {
-        char c = userData[k];
-        Serial.print((c >= 32 && c <= 126) ? c : '.');
+      // Try to extract clean text
+      char cleanText[40];
+      int textLen = extractText(userData, cleanText, sizeof(cleanText) - 1);
+      
+      if (textLen > 0) {
+        Serial.print("Album: \"");
+        Serial.print(cleanText);
+        Serial.println("\"");
+      } else {
+        // Fallback to raw data if no valid NDEF text found
+        Serial.print("Data: ");
+        for (int k = 0; k < 48; k++) {
+          char c = userData[k];
+          Serial.print((c >= 32 && c <= 126) ? c : '.');
+        }
+        Serial.println();
       }
-      Serial.println();
     } else {
       Serial.println("Failed to read user data");
     }

@@ -12,9 +12,11 @@ public:
   void dumpRegisters();
 
   bool readUserData(uint8_t *buffer, uint8_t numBytes);
+  
+  // Extract clean text from NDEF formatted data
+  int extractText(const uint8_t *ndefData, char *textOut, uint8_t maxLen);
 
-
-  // NEW: run N reads
+  // Run N reads for testing
   void runPNTest(int count);
 
 private:
