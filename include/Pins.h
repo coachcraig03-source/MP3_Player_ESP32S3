@@ -60,15 +60,15 @@
 //   CAPACITIVE TOUCH (I2C)
 //   Separate I2C bus - no conflicts
 // =========================
-#define I2C_SDA         45      // Touch IIC Data (pin 12 - CTP_SDA)
-#define I2C_SCL         46      // Touch IIC Clock (pin 10 - CTP_SCL)
-#define TOUCH_RST       37//47      // Touch Reset (pin 11 - CTP_RST)
+#define I2C_SDA         5//45      // Touch IIC Data (pin 12 - CTP_SDA)
+#define I2C_SCL         6//46      // Touch IIC Clock (pin 10 - CTP_SCL)
+#define TOUCH_RST       4//37//47      // Touch Reset (pin 11 - CTP_RST)
 #define TOUCH_INT       48      // Touch Interrupt (pin 13 - CTP_INT)
 
 // =========================
 //   USER INTERFACE
 // =========================
-#define LED_STATUS      21      // Built-in RGB LED (GPIO 48 used for touch)
+//#define LED_STATUS      21      // Built-in RGB LED (GPIO 48 used for touch)
 #define BUTTON_MODE     0       // Boot button (built-in)
 
 // =========================
