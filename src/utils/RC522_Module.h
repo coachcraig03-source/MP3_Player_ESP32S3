@@ -26,14 +26,20 @@ public:
   // Run test routine (N reads)
   void runTest(int count);
   
-  // Get direct access to MFRC522 object if needed
-  MFRC522* getRFID() { return rfid; }
+  // Check if a card is present
+  bool isCardPresent();
   
+  // Get album text from current card
+  bool readAlbumText(char *textOut, uint8_t maxLen);
+  
+  // Halt current card
+  void haltCard();
+
 private:
   uint8_t _cs, _rst;
-  MFRC522 *rfid;
+  MFRC522 rfid;  // Static object, NOT pointer
   
-  // Wait for card and read UID
+  // Wait for card with timeout
   bool waitForCard(uint32_t timeout_ms = 5000);
 };
 
