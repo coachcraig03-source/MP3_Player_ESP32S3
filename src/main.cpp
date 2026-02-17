@@ -4,11 +4,13 @@
 #include "utils/RC522_Module.h"
 #include "utils/VS1053_Module.h"
 #include "utils/TFT_Module.h"
+#include "screens/TFT_TestScreen.h"
 
 // Create modules
 RC522_Module nfcModule(NFC_CS, NFC_RST);
 VS1053_Module audioModule(VS1053_CS, VS1053_DCS, VS1053_DREQ, VS1053_RST);
 TFT_Module tftModule(TFT_CS, TFT_DC, TFT_RST, TFT_BL, SPI2_SCK, SPI2_MOSI, SPI2_MISO);
+TFT_TestScreen tftTest(&tftModule);
 
 void printMenu() {
   Serial.println();
@@ -16,7 +18,8 @@ void printMenu() {
   Serial.println("ESP32-S3 Hardware Test Menu");
   Serial.println("========================================");
   Serial.println("1: RC522 NFC test (5 reads)");
-  Serial.println("2: VS1053 audio test");
+  Serial.println("2: TFT video test");
+  Serial.println("3: VS1053 audio test");
   Serial.println("========================================");
   Serial.println();
 }
@@ -75,8 +78,17 @@ void loop() {
       nfcModule.runTest(5);
       printMenu();
       break;
-    
+
+    // In loop() case '2':
     case '2':
+      Serial.println("\n>>> Running TFT display test...");
+      tftTest.runTest();
+      
+      // Restore SPI1 after TFT test
+      SPI.begin(SPI1_SCK, SPI1_MISO, SPI1_MOSI);
+      delay(100);  
+        
+    case '3':
       Serial.println("\n>>> Running VS1053 test...");
       if (audioModule.isAlive()) {
         Serial.println("✓ VS1053 is responding!");
