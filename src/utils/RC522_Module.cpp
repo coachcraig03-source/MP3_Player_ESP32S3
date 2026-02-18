@@ -28,6 +28,8 @@ void RC522_Module::begin() {
   }
 }
 
+
+
 bool RC522_Module::isCardPresent() {
   return rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial();
 }

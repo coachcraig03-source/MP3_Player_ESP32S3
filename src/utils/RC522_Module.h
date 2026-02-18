@@ -17,8 +17,11 @@ public:
   // Initialize the RC522
   void begin();
   
+  
   // Read user data from NTAG215 (starting at page 4)
   bool readUserData(uint8_t *buffer, uint8_t numBytes);
+
+
   
   // Extract clean text from NDEF formatted data
   int extractText(const uint8_t *ndefData, char *textOut, uint8_t maxLen);
