@@ -32,49 +32,50 @@ void RC522_Module::begin() {
 
 void RC522_Module::monitorForTags(ScreenManager& screenManager) {
     static bool inCardSession = false;
-    static unsigned long tagRemovedTime = 0;
+    static unsigned long noReadCount = 0;
     static unsigned long lastCheck = 0;
+    static byte lastUID[10];
+    static byte lastUIDSize = 0;
     const unsigned long CHECK_INTERVAL = 500;
-    const unsigned long REMOVAL_DEBOUNCE = 2000;
+    const unsigned long NO_READ_THRESHOLD = 4;
     
     if (millis() - lastCheck < CHECK_INTERVAL) return;
     lastCheck = millis();
     
-    bool tagNowPresent = isCardPresent();
-    
-    // New tag detected
-    if (tagNowPresent && !inCardSession) {
-        Serial.println("NFC: Tag detected - starting session!");
-        inCardSession = true;
-        tagRemovedTime = 0;
-        
-        char albumText[40];
-        if (readAlbumText(albumText, sizeof(albumText))) {
-            Serial.printf("NFC: Album = '%s'\n", albumText);
-            screenManager.getKidScreen()->showAlbum(albumText);
+    // Don't call isCardPresent - go straight to reading
+    if (rfid.PICC_IsNewCardPresent()) {
+        if (rfid.PICC_ReadCardSerial()) {
+            noReadCount = 0;
+            
+            if (!inCardSession) {
+                // New session
+                Serial.println("NFC: Card detected");
+                inCardSession = true;
+                
+                // Save UID
+                lastUIDSize = rfid.uid.size;
+                for (byte i = 0; i < lastUIDSize; i++) {
+                    lastUID[i] = rfid.uid.uidByte[i];
+                }
+                
+                char albumText[40];
+                if (readAlbumText(albumText, sizeof(albumText))) {
+                    Serial.printf("NFC: Album = '%s'\n", albumText);
+                    screenManager.getKidScreen()->showAlbum(albumText);
+                }
+            }
+            // Don't halt - let it keep reading
         }
-        haltCard();
     }
-    
-    // No tag detected
-    else if (!tagNowPresent && inCardSession) {
-        if (tagRemovedTime == 0) {
-            tagRemovedTime = millis();
-            Serial.println("NFC: No tag - debouncing...");
-        }
-        else if (millis() - tagRemovedTime >= REMOVAL_DEBOUNCE) {
-            Serial.println("NFC: Session ended");
+    else if (inCardSession) {
+        noReadCount++;
+        if (noReadCount >= NO_READ_THRESHOLD) {
+            Serial.println("NFC: Card removed");
             inCardSession = false;
+            noReadCount = 0;
             screenManager.getKidScreen()->clearAlbum();
             screenManager.showSplash();
-            tagRemovedTime = 0;
         }
-    }
-    
-    // Tag detected again during session - card still there!
-    else if (tagNowPresent && inCardSession) {
-        tagRemovedTime = 0;  // Reset debounce
-        haltCard();
     }
 }
 
