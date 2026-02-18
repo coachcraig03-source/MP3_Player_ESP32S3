@@ -137,6 +137,5 @@ void KidScreen::clearAlbum() {
     
     // TODO: Stop playback
     
-    // Return to splash
-    screenManager.showSplash();
+    // Don't auto-switch - let main.cpp handle it
 }

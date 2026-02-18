@@ -21,17 +21,19 @@ ScreenManager screenManager(tftModule);
 
 // Touch interrupt
 volatile bool touchDetected = false;
+// NFC state tracking
+bool nfcTagPresent = false;
+unsigned long lastNFCCheck = 0;
+unsigned long tagRemovedTime = 0;  // Add this
+const unsigned long NFC_CHECK_INTERVAL = 500;
+const unsigned long TAG_REMOVAL_DEBOUNCE = 2000;  // 2 seconds
 
 void IRAM_ATTR touchISR() {
   touchDetected = true;
 }
 
-// NFC state tracking
-bool nfcTagPresent = false;
-unsigned long lastNFCCheck = 0;
-const unsigned long NFC_CHECK_INTERVAL = 500;  // Check every 500ms
-// Forward declaration
-void checkNFCStatus();
+
+
 
 void setup() {
   Serial.begin(115200);
@@ -91,11 +93,12 @@ void setup() {
   screenManager.begin();
   
   Serial.println("\n=== System Ready ===\n");
-}
-
-void loop() {
+}void loop() {
   // Update current screen (animations, etc.)
   screenManager.update();
+  
+  // Monitor NFC for tag placement/removal
+  nfcModule.monitorForTags(screenManager);
   
   // Handle touch events
   if (touchDetected) {
@@ -108,41 +111,6 @@ void loop() {
     }
   }
   
-  // Check for NFC tags (in Kid Mode only)
-  if (millis() - lastNFCCheck >= NFC_CHECK_INTERVAL) {
-    lastNFCCheck = millis();
-    checkNFCStatus();
-  }
-  
   delay(10);
 }
 
-void checkNFCStatus() {
-  bool tagNowPresent = nfcModule.isCardPresent();
-  
-  // Tag just placed
-  if (tagNowPresent && !nfcTagPresent) {
-    Serial.println("NFC: Tag detected!");
-    
-    // Read album text from tag
-    char albumText[40];
-    if (nfcModule.readAlbumText(albumText, sizeof(albumText))) {
-      Serial.printf("NFC: Album = '%s'\n", albumText);
-      
-      // Show album on kid screen
-      screenManager.getKidScreen()->showAlbum(albumText);
-    }
-    
-    nfcModule.haltCard();
-  }
-  
-  // Tag just removed
-  else if (!tagNowPresent && nfcTagPresent) {
-    Serial.println("NFC: Tag removed!");
-    
-    // Clear album and return to splash
-    screenManager.getKidScreen()->clearAlbum();
-  }
-  
-  nfcTagPresent = tagNowPresent;
-}

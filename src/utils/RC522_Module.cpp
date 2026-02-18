@@ -3,6 +3,8 @@
 // =====================================================================
 
 #include "RC522_Module.h"
+#include "../managers/ScreenManager.h"  // Add this
+#include "../screens/KidScreen.h"        // And this
 
 // Constructor - initialize rfid object in initializer list
 RC522_Module::RC522_Module(uint8_t cs, uint8_t rst)
@@ -28,7 +30,53 @@ void RC522_Module::begin() {
   }
 }
 
-
+void RC522_Module::monitorForTags(ScreenManager& screenManager) {
+    static bool inCardSession = false;
+    static unsigned long tagRemovedTime = 0;
+    static unsigned long lastCheck = 0;
+    const unsigned long CHECK_INTERVAL = 500;
+    const unsigned long REMOVAL_DEBOUNCE = 2000;
+    
+    if (millis() - lastCheck < CHECK_INTERVAL) return;
+    lastCheck = millis();
+    
+    bool tagNowPresent = isCardPresent();
+    
+    // New tag detected
+    if (tagNowPresent && !inCardSession) {
+        Serial.println("NFC: Tag detected - starting session!");
+        inCardSession = true;
+        tagRemovedTime = 0;
+        
+        char albumText[40];
+        if (readAlbumText(albumText, sizeof(albumText))) {
+            Serial.printf("NFC: Album = '%s'\n", albumText);
+            screenManager.getKidScreen()->showAlbum(albumText);
+        }
+        haltCard();
+    }
+    
+    // No tag detected
+    else if (!tagNowPresent && inCardSession) {
+        if (tagRemovedTime == 0) {
+            tagRemovedTime = millis();
+            Serial.println("NFC: No tag - debouncing...");
+        }
+        else if (millis() - tagRemovedTime >= REMOVAL_DEBOUNCE) {
+            Serial.println("NFC: Session ended");
+            inCardSession = false;
+            screenManager.getKidScreen()->clearAlbum();
+            screenManager.showSplash();
+            tagRemovedTime = 0;
+        }
+    }
+    
+    // Tag detected again during session - card still there!
+    else if (tagNowPresent && inCardSession) {
+        tagRemovedTime = 0;  // Reset debounce
+        haltCard();
+    }
+}
 
 bool RC522_Module::isCardPresent() {
   return rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial();

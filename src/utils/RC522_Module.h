@@ -9,6 +9,9 @@
 #include <Arduino.h>
 #include <MFRC522.h>
 
+// Forward declaration
+class ScreenManager;
+
 class RC522_Module {
 public:
   // Constructor
@@ -21,8 +24,9 @@ public:
   // Read user data from NTAG215 (starting at page 4)
   bool readUserData(uint8_t *buffer, uint8_t numBytes);
 
-
-  
+  // Monitor NFC for tag placement/removal with debouncing
+  void monitorForTags(ScreenManager& screenManager);
+    
   // Extract clean text from NDEF formatted data
   int extractText(const uint8_t *ndefData, char *textOut, uint8_t maxLen);
   
