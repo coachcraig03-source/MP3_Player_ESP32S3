@@ -8,14 +8,15 @@
 #include "../managers/BaseScreen.h"
 #include "../ui/UIButton.h"
 
+class VS1053_Module;
+
 class KidScreen : public BaseScreen {
 public:
-    KidScreen(ScreenManager& manager, TFT_Module& tft);
+    KidScreen(ScreenManager& manager, TFT_Module& tft, VS1053_Module& audio);
 
     void begin() override;
     void update() override;
     void handleTouch(int x, int y) override;
-
     
     // Called when NFC tag is detected
     void showAlbum(const char* albumName);
@@ -26,6 +27,8 @@ public:
 private:
     void drawWaitingScreen();
     void drawPlaybackScreen();
+    
+    VS1053_Module& audioModule;
     
     char currentAlbum[40];
     bool albumLoaded;

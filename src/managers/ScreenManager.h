@@ -11,10 +11,11 @@ class SplashScreen;
 class AdultScreen;
 class KidScreen;
 class CalibrationScreen;
+class VS1053_Module;
 
 class ScreenManager {
 public:
-    ScreenManager(TFT_Module& tft);
+    ScreenManager(TFT_Module& tft, VS1053_Module& audio);
     ~ScreenManager();
 
     void begin();
@@ -41,6 +42,7 @@ private:
     void switchTo(BaseScreen* newScreen);
     
     TFT_Module& tft;
+    VS1053_Module& audioModule;
     
     BaseScreen* currentScreen;
     SplashScreen* splashScreen;

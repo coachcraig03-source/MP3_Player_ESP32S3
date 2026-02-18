@@ -9,8 +9,9 @@
 #include "../screens/CalibrationScreen.h"
 #include "../utils/TouchCalibration.h"
 
-ScreenManager::ScreenManager(TFT_Module& tftRef)
+ScreenManager::ScreenManager(TFT_Module& tftRef, VS1053_Module& audio)
     : tft(tftRef),
+      audioModule(audio),
       currentScreen(nullptr),
       splashScreen(nullptr),
       adultScreen(nullptr),
@@ -30,7 +31,7 @@ void ScreenManager::begin() {
     // Create all screens
     splashScreen = new SplashScreen(*this, tft);
     adultScreen = new AdultScreen(*this, tft);
-    kidScreen = new KidScreen(*this, tft);
+    kidScreen = new KidScreen(*this, tft, audioModule);
     
     // Start with splash screen
     switchTo(splashScreen);
@@ -71,12 +72,9 @@ void ScreenManager::handleTouch(int x, int y) {
         int screenX = x;
         int screenY = y;
         
-        bool shouldTransform = (currentScreen != calibrationScreen && TouchCalibration::getInstance().isCalibrated());
-        //Serial.printf("ScreenManager: shouldTransform=%d, isCalibrated=%d\n", shouldTransform, TouchCalibration::getInstance().isCalibrated());
-        
-        if (shouldTransform) {
+        // Transform coordinates UNLESS we're on calibration screen
+        if (currentScreen != calibrationScreen && TouchCalibration::getInstance().isCalibrated()) {
             TouchCalibration::getInstance().transform(x, y, screenX, screenY);
-            //Serial.printf("ScreenManager: Transform (%d,%d) -> (%d,%d)\n", x, y, screenX, screenY);
         }
         
         currentScreen->handleTouch(screenX, screenY);

@@ -15,8 +15,8 @@ VS1053_Module audioModule(VS1053_CS, VS1053_DCS, VS1053_DREQ, VS1053_RST);
 TFT_Module tftModule(TFT_CS, TFT_DC, TFT_RST, TFT_BL, SPI2_SCK, SPI2_MOSI, SPI2_MISO);
 FT6236 touchScreen;
 
-// Screen management
-ScreenManager screenManager(tftModule);
+// Screen management (pass audioModule reference)
+ScreenManager screenManager(tftModule, audioModule);
 
 // Touch interrupt
 volatile bool touchDetected = false;
@@ -52,6 +52,21 @@ void setup() {
   
   Serial.println("\nInitializing VS1053 Audio...");
   audioModule.begin();
+Serial.println("\nInitializing VS1053 Audio...");
+audioModule.begin();
+delay(100);
+
+// TEST: Play tone immediately on boot
+Serial.println("Testing VS1053 with tone...");
+audioModule.playTestTone(1000);  // 1000Hz tone
+delay(2000);
+audioModule.stopPlayback();
+Serial.println("Tone test complete");
+
+// Initialize TFT
+Serial.println("\nInitializing TFT Display...");
+
+
   delay(100);
   
   // Initialize TFT
@@ -77,14 +92,9 @@ void setup() {
   pinMode(TOUCH_INT, INPUT_PULLUP);
   attachInterrupt(TOUCH_INT, touchISR, FALLING);
   Serial.println("Touch: ✓ Ready!");
-
-
   
-  // Set default calibration values for initial usability
+  // Set default calibration values
   TouchCalibration::getInstance().setCalibration(1.5, 1.3, -200, -50);
-
-    // RESET bad calibration - UNCOMMENT THIS LINE
-//TouchCalibration::getInstance().reset();
   
   // Load saved calibration (will override defaults if exists)
   TouchCalibration::getInstance().loadFromPreferences();
@@ -111,9 +121,7 @@ void loop() {
     TS_Point p = touchScreen.getPoint();
     
     if (p.x != 0 && p.y != 0) {
-      // Pass RAW coordinates to ScreenManager
-      // ScreenManager will transform them if needed
-      //Serial.printf("Touch: Raw=(%d,%d)\n", p.x, p.y);
+      // Pass RAW coordinates to ScreenManager (it handles transform)
       screenManager.handleTouch(p.x, p.y);
     }
   }

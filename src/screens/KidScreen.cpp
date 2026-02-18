@@ -5,10 +5,12 @@
 #include "KidScreen.h"
 #include "../managers/ScreenManager.h"
 #include "../utils/TFT_Module.h"
+#include "../utils/VS1053_Module.h"
 #include <LovyanGFX.hpp>
 
-KidScreen::KidScreen(ScreenManager& manager, TFT_Module& tftModule)
+KidScreen::KidScreen(ScreenManager& manager, TFT_Module& tftModule, VS1053_Module& audio)
     : BaseScreen(manager, tftModule),
+      audioModule(audio),
       albumLoaded(false),
       isPlaying(false),
       prevButton(40, 240, 80, 60, "<<"),
@@ -104,6 +106,12 @@ void KidScreen::handleTouch(int x, int y) {
             isPlaying = !isPlaying;
             Serial.println(isPlaying ? "Playing" : "Paused");
             playPauseButton.setLabel(isPlaying ? "||" : ">");
+            
+            if (!isPlaying) {
+                // Stop playback when paused
+                audioModule.stopPlayback();
+            }
+            
             begin();  // Redraw to update button
             // TODO: Implement play/pause
         }
@@ -125,7 +133,8 @@ void KidScreen::showAlbum(const char* albumName) {
     
     drawPlaybackScreen();
     
-    // TODO: Start playback
+    // Play test tone when album loads
+ audioModule.playTestTone(440);  // No duration
 }
 
 void KidScreen::clearAlbum() {
@@ -135,7 +144,9 @@ void KidScreen::clearAlbum() {
     isPlaying = false;
     currentAlbum[0] = '\0';
     
-    // TODO: Stop playback
+    // Stop playback
+    audioModule.stopPlayback();
     
-    // Don't auto-switch - let main.cpp handle it
+    // Return to splash
+    screenManager.showSplash();
 }
