@@ -81,7 +81,7 @@ bool TFT_Module::begin() {
   
   // DON'T touch global SPI here
   
-  tft->setRotation(1);
+  tft->setRotation(3);
   Serial.printf("TFT: Display size: %d x %d\n", tft->width(), tft->height());
   tft->fillScreen(TFT_BLACK);
   

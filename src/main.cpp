@@ -6,9 +6,8 @@
 #include "utils/RC522_Module.h"
 #include "utils/VS1053_Module.h"
 #include "utils/TFT_Module.h"
+#include "utils/TouchCalibration.h"
 #include "managers/ScreenManager.h"
-#include "managers/ScreenManager.h"
-#include "screens/KidScreen.h"  // Add this
 
 // Hardware modules
 RC522_Module nfcModule(NFC_CS, NFC_RST);
@@ -21,19 +20,10 @@ ScreenManager screenManager(tftModule);
 
 // Touch interrupt
 volatile bool touchDetected = false;
-// NFC state tracking
-bool nfcTagPresent = false;
-unsigned long lastNFCCheck = 0;
-unsigned long tagRemovedTime = 0;  // Add this
-const unsigned long NFC_CHECK_INTERVAL = 500;
-const unsigned long TAG_REMOVAL_DEBOUNCE = 2000;  // 2 seconds
 
 void IRAM_ATTR touchISR() {
   touchDetected = true;
 }
-
-
-
 
 void setup() {
   Serial.begin(115200);
@@ -84,16 +74,29 @@ void setup() {
   Wire.begin(I2C_SDA, I2C_SCL);
   touchScreen.begin();
   
-  pinMode(TOUCH_INT, INPUT);
+  pinMode(TOUCH_INT, INPUT_PULLUP);
   attachInterrupt(TOUCH_INT, touchISR, FALLING);
   Serial.println("Touch: ✓ Ready!");
+
+
   
-  // Initialize Screen Manager (shows splash screen)
+  // Set default calibration values for initial usability
+  TouchCalibration::getInstance().setCalibration(1.5, 1.3, -200, -50);
+
+    // RESET bad calibration - UNCOMMENT THIS LINE
+//TouchCalibration::getInstance().reset();
+  
+  // Load saved calibration (will override defaults if exists)
+  TouchCalibration::getInstance().loadFromPreferences();
+  
+  // Initialize Screen Manager
   Serial.println("\nInitializing Screen Manager...");
   screenManager.begin();
   
   Serial.println("\n=== System Ready ===\n");
-}void loop() {
+}
+
+void loop() {
   // Update current screen (animations, etc.)
   screenManager.update();
   
@@ -103,14 +106,17 @@ void setup() {
   // Handle touch events
   if (touchDetected) {
     touchDetected = false;
+    delay(50);  // Debounce
+    
     TS_Point p = touchScreen.getPoint();
     
-    if (p.x != 0 && p.y != 0) {  // Filter phantom touches
-      Serial.printf("Touch: X=%d Y=%d\n", p.x, p.y);
+    if (p.x != 0 && p.y != 0) {
+      // Pass RAW coordinates to ScreenManager
+      // ScreenManager will transform them if needed
+      //Serial.printf("Touch: Raw=(%d,%d)\n", p.x, p.y);
       screenManager.handleTouch(p.x, p.y);
     }
   }
   
   delay(10);
 }
-

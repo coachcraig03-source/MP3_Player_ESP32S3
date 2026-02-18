@@ -10,11 +10,13 @@
 SplashScreen::SplashScreen(ScreenManager& manager, TFT_Module& tftModule)
     : BaseScreen(manager, tftModule),
       kidsButton(60, 140, 160, 80, "Kids Mode"),
-      adultButton(260, 140, 160, 80, "Adult Mode")
+      adultButton(260, 140, 160, 80, "Adult Mode"),
+      calibrateButton(160, 240, 160, 50, "Calibrate")
 {
     // Customize button colors
     kidsButton.setColors(0x07E0, TFT_YELLOW, TFT_WHITE);   // Green bg, yellow border
     adultButton.setColors(0x001F, TFT_CYAN, TFT_WHITE);    // Blue bg, cyan border
+    calibrateButton.setColors(0x632C, TFT_WHITE, TFT_WHITE); // Gray bg
 }
 
 void SplashScreen::begin() {
@@ -37,6 +39,7 @@ void SplashScreen::begin() {
     // Draw buttons
     kidsButton.draw(tft);
     adultButton.draw(tft);
+    calibrateButton.draw(tft);
 }
 
 void SplashScreen::update() {
@@ -53,6 +56,12 @@ void SplashScreen::handleTouch(int x, int y) {
     if (adultButton.hit(x, y)) {
         Serial.println("Adult Mode selected");
         screenManager.showAdult();
+        return;
+    }
+    
+    if (calibrateButton.hit(x, y)) {
+        Serial.println("Calibrate selected");
+        screenManager.showCalibration();
         return;
     }
 }

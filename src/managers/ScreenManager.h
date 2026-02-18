@@ -10,6 +10,7 @@ class BaseScreen;
 class SplashScreen;
 class AdultScreen;
 class KidScreen;
+class CalibrationScreen;
 
 class ScreenManager {
 public:
@@ -19,11 +20,15 @@ public:
     void begin();
     void update();
     void handleTouch(int x, int y);
+    
+    // Check if current screen is calibration screen
+    bool isOnCalibrationScreen() const;
 
     // Navigation helpers
     void showSplash();
     void showAdult();
     void showKids();
+    void showCalibration();
     
     // Access to screens (for inter-screen communication)
     KidScreen* getKidScreen() { return kidScreen; }
@@ -41,6 +46,7 @@ private:
     SplashScreen* splashScreen;
     AdultScreen* adultScreen;
     KidScreen* kidScreen;
+    CalibrationScreen* calibrationScreen;
 };
 
 #endif // SCREEN_MANAGER_H

@@ -19,6 +19,7 @@ public:
 private:
     UIButton kidsButton;
     UIButton adultButton;
+    UIButton calibrateButton;
 };
 
 #endif // SPLASH_SCREEN_H
