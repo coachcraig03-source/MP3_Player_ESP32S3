@@ -8,15 +8,17 @@
 #include "utils/TFT_Module.h"
 #include "utils/TouchCalibration.h"
 #include "managers/ScreenManager.h"
+#include "utils/SD_Module.h"
 
 // Hardware modules
 RC522_Module nfcModule(NFC_CS, NFC_RST);
 VS1053_Module audioModule(VS1053_CS, VS1053_DCS, VS1053_DREQ, VS1053_RST);
 TFT_Module tftModule(TFT_CS, TFT_DC, TFT_RST, TFT_BL, SPI2_SCK, SPI2_MOSI, SPI2_MISO);
+SD_Module sdModule(SD_CS);  // Add this
 FT6236 touchScreen;
 
 // Screen management (pass audioModule reference)
-ScreenManager screenManager(tftModule, audioModule);
+ScreenManager screenManager(tftModule, audioModule, sdModule);
 
 // Touch interrupt
 volatile bool touchDetected = false;
@@ -52,19 +54,20 @@ void setup() {
   
   Serial.println("\nInitializing VS1053 Audio...");
   audioModule.begin();
-Serial.println("\nInitializing VS1053 Audio...");
-audioModule.begin();
-delay(100);
+  audioModule.setVolume(75);  // Set to 75%
 
-// TEST: Play tone immediately on boot
-Serial.println("Testing VS1053 with tone...");
-audioModule.playTestTone(1000);  // 1000Hz tone
-delay(2000);
-audioModule.stopPlayback();
-Serial.println("Tone test complete");
+  Serial.println("\nInitializing VS1053 Audio...");
+  audioModule.begin();
+  audioModule.setVolume(75);
+  delay(100);
 
-// Initialize TFT
-Serial.println("\nInitializing TFT Display...");
+  // Initialize SD Card
+  Serial.println("\nInitializing SD Card...");
+  if (!sdModule.begin()) {
+    Serial.println("SD Card failed - MP3 playback won't work!");
+  } else {
+    Serial.println("SD Card ready!");
+  }
 
 
   delay(100);

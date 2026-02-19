@@ -12,10 +12,11 @@ class AdultScreen;
 class KidScreen;
 class CalibrationScreen;
 class VS1053_Module;
+class SD_Module;  // Add this forward declaration
 
 class ScreenManager {
 public:
-    ScreenManager(TFT_Module& tft, VS1053_Module& audio);
+    ScreenManager(TFT_Module& tft, VS1053_Module& audio, SD_Module& sd);
     ~ScreenManager();
 
     void begin();
@@ -43,6 +44,7 @@ private:
     
     TFT_Module& tft;
     VS1053_Module& audioModule;
+    SD_Module& sdModule;  // Add this
     
     BaseScreen* currentScreen;
     SplashScreen* splashScreen;

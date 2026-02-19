@@ -33,6 +33,50 @@ VS1053_Module::VS1053_Module(uint8_t cs, uint8_t dcs, uint8_t dreq, uint8_t rst)
 {
 }
 
+void VS1053_Module::setVolume(uint8_t volume) {
+    // Volume: 0-100 (0=silent, 100=loudest)
+    // VS1053 uses 0x00=loudest, 0xFE=quietest (inverted!)
+    
+    // Map 0-100 to 0xFE-0x00 (inverted)
+    uint8_t vs1053_vol = map(volume, 0, 100, 0xFE, 0x00);
+    
+    // Reinitialize SPI1
+    SPI.begin(SPI1_SCK, SPI1_MISO, SPI1_MOSI);
+    delay(5);
+    
+    // Set both left and right channels to same volume
+    uint16_t vol_stereo = (vs1053_vol << 8) | vs1053_vol;
+    writeRegister(SCI_VOL, vol_stereo);
+    
+    Serial.printf("VS1053: Volume set to %d%%\n", volume);
+        // Read it back to verify
+    delay(10);
+    SPI.beginTransaction(SPISettings(250000, MSBFIRST, SPI_MODE0));
+    digitalWrite(_cs, LOW);
+    SPI.transfer(0x03);  // Read command
+    SPI.transfer(SCI_VOL);  // This is defined at top of .cpp file
+    uint16_t readBack = SPI.transfer(0x00) << 8;
+    readBack |= SPI.transfer(0x00);
+    digitalWrite(_cs, HIGH);
+    SPI.endTransaction();
+    
+    Serial.printf("VS1053: Volume readback = 0x%04X\n", readBack);
+
+    // Re-enable sine test mode (in case volume write cleared it)
+    delay(10);
+    SPI.beginTransaction(SPISettings(250000, MSBFIRST, SPI_MODE0));
+    digitalWrite(_cs, LOW);
+    SPI.transfer(0x02);  // Write
+    SPI.transfer(0x00);  // MODE register
+    SPI.transfer(0x08);  // SM_SDINEW
+    SPI.transfer(0x24);  // + SM_RESET + SM_TESTS
+    digitalWrite(_cs, HIGH);
+    SPI.endTransaction();
+
+    Serial.println("VS1053: Sine test mode re-enabled after volume change");
+}
+
+
 void VS1053_Module::begin() {
     Serial.println("VS1053: Initializing...");
     
@@ -200,4 +244,38 @@ void VS1053_Module::softReset() {
     delay(100);
     
     while (!digitalRead(_dreq)) delay(1);
+}
+
+// Add these methods to your existing VS1053_Module.cpp
+
+bool VS1053_Module::isReadyForData() {
+    return digitalRead(_dreq) == HIGH;
+}
+
+void VS1053_Module::sendMP3Data(uint8_t* data, size_t len) {
+    // Reinitialize SPI1
+    SPI.begin(SPI1_SCK, SPI1_MISO, SPI1_MOSI);
+    delay(1);
+    
+    // Send data in 32-byte chunks (VS1053 buffer size)
+    size_t sent = 0;
+    while (sent < len) {
+        // Wait for DREQ (chip ready for data)
+        while (!digitalRead(_dreq)) {
+            delay(1);
+        }
+        
+        // Send up to 32 bytes
+        size_t chunkSize = min((size_t)32, len - sent);
+        
+        SPI.beginTransaction(SPISettings(250000, MSBFIRST, SPI_MODE0));
+        digitalWrite(_dcs, LOW);
+        for (size_t i = 0; i < chunkSize; i++) {
+            SPI.transfer(data[sent + i]);
+        }
+        digitalWrite(_dcs, HIGH);
+        SPI.endTransaction();
+        
+        sent += chunkSize;
+    }
 }

@@ -20,9 +20,9 @@
 // =========================
 #define NFC_CS          16      // PN5180 Chip Select (NSS)
 #define NFC_RST         18      // PN5180 Reset
-#define NFC_BUSY        14      // PN5180 Busy signal
-#define NFC_IRQ         15      // PN5180 IRQ (may not be needed)
-#define NFC_AUX         -1      // PN5180 AUX (not used)
+//#define NFC_BUSY        14      // PN5180 Busy signal
+//#define NFC_IRQ         15      // PN5180 IRQ (may not be needed)
+//#define NFC_AUX         -1      // PN5180 AUX (not used)
 
 // =========================
 //   VS1053B AUDIO DECODER
@@ -30,7 +30,7 @@
 // =========================
 #define VS1053_CS       9       // VS1053 SPI Chip Select
 #define VS1053_DCS      7       // VS1053 Data Chip Select (XDCS)
-#define VS1053_DREQ     2       // VS1053 Data Request (must be interrupt-capable)
+#define VS1053_DREQ     10//2       // VS1053 Data Request (must be interrupt-capable)
 #define VS1053_RST      8       // VS1053 Reset (XRST)
 
 // =========================
@@ -50,11 +50,12 @@
 #define TFT_DC          40      // LCD Data/Command (pin 5 - LCD_RS)
 #define TFT_BL          41      // LCD Backlight (pin 8 - LED)
 
+
 // =========================
-//   SD CARD (on TFT module)
-//   Shares SPI2 bus with TFT
+//   SD CARD 
 // =========================
-#define SD_CS           42      // SD Card Chip Select (pin 14)
+#define SD_CS           2       // SDMMC Data 3
+
 
 // =========================
 //   CAPACITIVE TOUCH (I2C)

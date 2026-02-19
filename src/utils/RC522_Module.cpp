@@ -61,6 +61,7 @@ void RC522_Module::monitorForTags(ScreenManager& screenManager) {
                 char albumText[40];
                 if (readAlbumText(albumText, sizeof(albumText))) {
                     Serial.printf("NFC: Album = '%s'\n", albumText);
+                    screenManager.showKids();
                     screenManager.getKidScreen()->showAlbum(albumText);
                 }
             }

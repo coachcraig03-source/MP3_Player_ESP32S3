@@ -9,9 +9,10 @@
 #include "../screens/CalibrationScreen.h"
 #include "../utils/TouchCalibration.h"
 
-ScreenManager::ScreenManager(TFT_Module& tftRef, VS1053_Module& audio)
+ScreenManager::ScreenManager(TFT_Module& tftRef, VS1053_Module& audio, SD_Module& sd)
     : tft(tftRef),
       audioModule(audio),
+      sdModule(sd),
       currentScreen(nullptr),
       splashScreen(nullptr),
       adultScreen(nullptr),
@@ -31,7 +32,7 @@ void ScreenManager::begin() {
     // Create all screens
     splashScreen = new SplashScreen(*this, tft);
     adultScreen = new AdultScreen(*this, tft);
-    kidScreen = new KidScreen(*this, tft, audioModule);
+    kidScreen = new KidScreen(*this, tft, audioModule, sdModule);
     
     // Start with splash screen
     switchTo(splashScreen);
