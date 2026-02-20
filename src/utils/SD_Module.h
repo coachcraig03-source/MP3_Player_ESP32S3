@@ -22,6 +22,9 @@ public:
     bool openFile(const char* path);
     void closeFile();
     
+    // Get album art path for a folder
+    bool getAlbumArt(const char* folderPath, char* artPath, size_t pathSize);
+    
     // Read chunk of data (returns bytes read, 0 = EOF)
     size_t readChunk(uint8_t* buffer, size_t size);
     

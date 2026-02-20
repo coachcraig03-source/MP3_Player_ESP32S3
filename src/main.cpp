@@ -45,6 +45,12 @@ void setup() {
   
   // Initialize RC522 NFC
   Serial.println("\nInitializing RC522 NFC...");
+    // FIRST THING: Hard reset RC522
+  pinMode(NFC_RST, OUTPUT);
+  digitalWrite(NFC_RST, LOW);
+  delay(200);
+  digitalWrite(NFC_RST, HIGH);
+  delay(200);
   nfcModule.begin();
   delay(100);
   

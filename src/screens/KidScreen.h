@@ -27,6 +27,9 @@ public:
     void clearAlbum();
     // MP3 playback
     void playMP3FromSD();
+    // Album art display
+    void displayAlbumArt();
+
 
 private:
     void drawWaitingScreen();

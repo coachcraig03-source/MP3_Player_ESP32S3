@@ -8,6 +8,22 @@
 #include "../utils/VS1053_Module.h"
 #include "../utils/SD_Module.h"  // Add this
 #include <LovyanGFX.hpp>
+#include <TJpg_Decoder.h>
+
+// Add this global pointer (ugly but TJpg_Decoder needs it)
+TFT_Module* globalTFT = nullptr;
+
+// Add this callback function BEFORE the KidScreen class methods:
+bool tftOutput(int16_t x, int16_t y, uint16_t w, uint16_t h, uint16_t* bitmap) {
+    // This function is called by TJpg_Decoder to output decoded JPEG data
+    // We'll set the target TFT in displayAlbumArt()
+    extern TFT_Module* globalTFT;
+    if (globalTFT && bitmap) {
+        auto display = globalTFT->getTFT();
+        display->pushImage(x, y, w, h, bitmap);
+    }
+    return true;
+}
 
 KidScreen::KidScreen(ScreenManager& manager, TFT_Module& tftModule, VS1053_Module& audio, SD_Module& sd)
     : BaseScreen(manager, tftModule),
@@ -74,8 +90,8 @@ void KidScreen::drawPlaybackScreen() {
     display->drawString(currentAlbum, 240, 20);
     
     // Album art placeholder (colorful rectangle for now)
-    display->fillRoundRect(90, 60, 300, 150, 10, TFT_PURPLE);
-    display->drawRoundRect(90, 60, 300, 150, 10, TFT_WHITE);
+    //display->fillRoundRect(90, 60, 300, 150, 10, TFT_PURPLE);
+    //display->drawRoundRect(90, 60, 300, 150, 10, TFT_WHITE);
     
     // Draw "NOW PLAYING" indicator
     display->setTextSize(1);
@@ -201,6 +217,11 @@ void KidScreen::showAlbum(const char* albumName) {
     // Play test tone when album loads
     //audioModule.playTestTone(440);
     // Play first MP3 instead of tone
+
+    // Display album art BEFORE starting music
+    displayAlbumArt();
+    
+
     playMP3FromSD();
 
 }
@@ -218,4 +239,77 @@ void KidScreen::clearAlbum() {
     
     // Return to splash
     screenManager.showSplash();
+}
+
+// Add this method to KidScreen class:
+void KidScreen::displayAlbumArt() {
+    // Get first album folder
+    char albumPath[128];
+    char mp3Path[128];
+    Serial.println("=== DISPLAY ALBUM ART CALLED ===");
+    if (!sdModule.getFirstMP3(mp3Path, sizeof(mp3Path))) {
+        Serial.println("No albums found for art");
+        return;
+    }
+    
+    // Extract folder path from MP3 path (everything before last /)
+    strncpy(albumPath, mp3Path, sizeof(albumPath));
+    char* lastSlash = strrchr(albumPath, '/');
+    if (lastSlash) {
+        *lastSlash = '\0';  // Truncate at last slash
+    }
+    
+    // Find album art in that folder
+    char artPath[128];
+    if (!sdModule.getAlbumArt(albumPath, artPath, sizeof(artPath))) {
+        Serial.println("No album art found");
+        return;
+    }
+    
+    // Set up TJpg_Decoder
+    TJpgDec.setJpgScale(1);  // 1:1 scale
+    TJpgDec.setCallback(tftOutput);
+    
+    // Set global TFT pointer for callback
+    globalTFT = &tft;
+    
+    // Open and decode JPEG
+    if (!sdModule.openFile(artPath)) {
+        Serial.println("Failed to open album art");
+        return;
+    }
+    
+    // Read entire file into buffer (album art should be small)
+    uint8_t* buffer = new uint8_t[50000];  // 50KB buffer
+    size_t totalRead = 0;
+    size_t bytesRead;
+    
+    while ((bytesRead = sdModule.readChunk(buffer + totalRead, 512)) > 0) {
+        totalRead += bytesRead;
+        if (totalRead >= 50000) break;  // Safety limit
+    }
+    
+    sdModule.closeFile();
+    
+    if (totalRead > 0) {
+        Serial.printf("Decoding %d bytes of JPEG...\n", totalRead);
+        
+        // Get JPEG dimensions
+        uint16_t w, h;
+        TJpgDec.getJpgSize(&w, &h, buffer, totalRead);
+        Serial.printf("JPEG size: %dx%d\n", w, h);
+        
+        // Center in the 300x150 box
+        int16_t x = 90 + (300 - w) / 2;
+        int16_t y = 60 + (150 - h) / 2;
+        
+        TJpgDec.setJpgScale(1);  // No scaling
+        TJpgDec.setSwapBytes(true);
+        TJpgDec.drawJpg(x, y, buffer, totalRead);
+    }
+    
+    delete[] buffer;
+    globalTFT = nullptr;
+    
+    Serial.println("Album art displayed!");
 }

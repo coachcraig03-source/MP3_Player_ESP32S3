@@ -104,7 +104,10 @@ bool SD_Module::openFile(const char* path) {
         return false;
     }
     
-    Serial.printf("SD: Opened %s (%lu bytes)\n", path, currentFile.fileSize());
+Serial.printf("SD: Opened %s (raw size=%lu, cast size=%lu)\n", 
+              path, 
+              (unsigned long)currentFile.fileSize(),
+              (unsigned long)currentFile.size());
     return true;
 }
 
@@ -125,4 +128,43 @@ size_t SD_Module::readChunk(uint8_t* buffer, size_t size) {
     delay(1);
     
     return currentFile.read(buffer, size);
+}
+
+// Add this method to SD_Module.cpp
+
+bool SD_Module::getAlbumArt(const char* folderPath, char* artPath, size_t pathSize) {
+    if (!initialized) {
+        Serial.println("SD: Not initialized!");
+        return false;
+    }
+    
+    // Reinitialize SPI1
+    SPI.begin(SPI1_SCK, SPI1_MISO, SPI1_MOSI);
+    delay(5);
+    
+    // Open the folder
+    FsFile dir;
+    if (!dir.open(folderPath)) {
+        Serial.printf("SD: Failed to open folder %s\n", folderPath);
+        return false;
+    }
+    
+    // Look for common album art filenames
+    const char* artNames[] = {"folder.jpg", "cover.jpg", "album.jpg", "front.jpg"};
+    
+    for (int i = 0; i < 4; i++) {
+        FsFile artFile;
+        if (artFile.open(&dir, artNames[i], O_RDONLY)) {
+            // Found album art!
+            snprintf(artPath, pathSize, "%s/%s", folderPath, artNames[i]);
+            Serial.printf("SD: Found album art: %s\n", artPath);
+            artFile.close();
+            dir.close();
+            return true;
+        }
+    }
+    
+    dir.close();
+    Serial.printf("SD: No album art found in %s\n", folderPath);
+    return false;
 }
