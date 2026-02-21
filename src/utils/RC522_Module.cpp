@@ -36,23 +36,22 @@ void RC522_Module::monitorForTags(ScreenManager& screenManager) {
     static unsigned long lastCheck = 0;
     static byte lastUID[10];
     static byte lastUIDSize = 0;
-    const unsigned long CHECK_INTERVAL = 500;
+    
+    // Check every 500ms when idle, every 2000ms when playing
+    const unsigned long CHECK_INTERVAL = inCardSession ? 1000 : 500;
     const unsigned long NO_READ_THRESHOLD = 4;
     
     if (millis() - lastCheck < CHECK_INTERVAL) return;
     lastCheck = millis();
     
-    // Don't call isCardPresent - go straight to reading
     if (rfid.PICC_IsNewCardPresent()) {
         if (rfid.PICC_ReadCardSerial()) {
             noReadCount = 0;
             
             if (!inCardSession) {
-                // New session
                 Serial.println("NFC: Card detected");
                 inCardSession = true;
                 
-                // Save UID
                 lastUIDSize = rfid.uid.size;
                 for (byte i = 0; i < lastUIDSize; i++) {
                     lastUID[i] = rfid.uid.uidByte[i];
@@ -65,7 +64,6 @@ void RC522_Module::monitorForTags(ScreenManager& screenManager) {
                     screenManager.getKidScreen()->showAlbum(albumText);
                 }
             }
-            // Don't halt - let it keep reading
         }
     }
     else if (inCardSession) {

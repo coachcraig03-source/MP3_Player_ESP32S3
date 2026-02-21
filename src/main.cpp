@@ -9,15 +9,17 @@
 #include "utils/TouchCalibration.h"
 #include "managers/ScreenManager.h"
 #include "utils/SD_Module.h"
+#include "managers/MP3Player.h"
 
 // Hardware modules
 RC522_Module nfcModule(NFC_CS, NFC_RST);
 VS1053_Module audioModule(VS1053_CS, VS1053_DCS, VS1053_DREQ, VS1053_RST);
 TFT_Module tftModule(TFT_CS, TFT_DC, TFT_RST, TFT_BL, SPI2_SCK, SPI2_MOSI, SPI2_MISO);
-SD_Module sdModule(SD_CS);  // Add this
+SD_Module sdModule(SD_CS);
 FT6236 touchScreen;
+MP3Player mp3Player(sdModule, audioModule);
 
-// Screen management (pass audioModule reference)
+// Screen management
 ScreenManager screenManager(tftModule, audioModule, sdModule);
 
 // Touch interrupt
@@ -33,7 +35,14 @@ void setup() {
   
   Serial.println("\n=== NFC MP3 Player Starting ===\n");
   
-  // Initialize SPI1 bus (RC522 + VS1053)
+  // Hard reset RC522 first (before any SPI init)
+  pinMode(NFC_RST, OUTPUT);
+  digitalWrite(NFC_RST, LOW);
+  delay(200);
+  digitalWrite(NFC_RST, HIGH);
+  delay(200);
+  
+  // Initialize SPI1 bus (RC522 + VS1053 + SD)
   Serial.println("Initializing SPI1 bus...");
   SPI.begin(SPI1_SCK, SPI1_MISO, SPI1_MOSI);
   delay(100);
@@ -45,12 +54,6 @@ void setup() {
   
   // Initialize RC522 NFC
   Serial.println("\nInitializing RC522 NFC...");
-    // FIRST THING: Hard reset RC522
-  pinMode(NFC_RST, OUTPUT);
-  digitalWrite(NFC_RST, LOW);
-  delay(200);
-  digitalWrite(NFC_RST, HIGH);
-  delay(200);
   nfcModule.begin();
   delay(100);
   
@@ -58,15 +61,19 @@ void setup() {
   digitalWrite(VS1053_RST, HIGH);
   delay(100);
   
-  Serial.println("\nInitializing VS1053 Audio...");
-  audioModule.begin();
-  audioModule.setVolume(75);  // Set to 75%
+ Serial.println("\nInitializing VS1053 Audio...");
+audioModule.begin();
+audioModule.setVolume(75);
 
-  Serial.println("\nInitializing VS1053 Audio...");
-  audioModule.begin();
-  audioModule.setVolume(75);
-  delay(100);
+// TEST: Verify audio output works
+Serial.println("Testing audio output...");
+audioModule.playTestTone(440);
+delay(2000);
+audioModule.stopPlayback();
+Serial.println("Audio test complete");
 
+delay(100);
+  
   // Initialize SD Card
   Serial.println("\nInitializing SD Card...");
   if (!sdModule.begin()) {
@@ -74,8 +81,6 @@ void setup() {
   } else {
     Serial.println("SD Card ready!");
   }
-
-
   delay(100);
   
   // Initialize TFT
@@ -105,7 +110,7 @@ void setup() {
   // Set default calibration values
   TouchCalibration::getInstance().setCalibration(1.5, 1.3, -200, -50);
   
-  // Load saved calibration (will override defaults if exists)
+  // Load saved calibration
   TouchCalibration::getInstance().loadFromPreferences();
   
   // Initialize Screen Manager
@@ -116,10 +121,13 @@ void setup() {
 }
 
 void loop() {
-  // Update current screen (animations, etc.)
+  // Update MP3 player (streams data to VS1053)
+  mp3Player.update();
+  
+  // Update screen animations
   screenManager.update();
   
-  // Monitor NFC for tag placement/removal
+  // Monitor NFC tags
   nfcModule.monitorForTags(screenManager);
   
   // Handle touch events
@@ -128,12 +136,8 @@ void loop() {
     delay(50);  // Debounce
     
     TS_Point p = touchScreen.getPoint();
-    
     if (p.x != 0 && p.y != 0) {
-      // Pass RAW coordinates to ScreenManager (it handles transform)
       screenManager.handleTouch(p.x, p.y);
     }
   }
-  
-  delay(10);
 }

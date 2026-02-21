@@ -6,7 +6,8 @@
 #include "../managers/ScreenManager.h"
 #include "../utils/TFT_Module.h"
 #include "../utils/VS1053_Module.h"
-#include "../utils/SD_Module.h"  // Add this
+#include "../utils/SD_Module.h"  
+#include "../managers/MP3Player.h"  
 #include <LovyanGFX.hpp>
 #include <TJpg_Decoder.h>
 
@@ -176,31 +177,15 @@ void KidScreen::handleTouch(int x, int y) {
 }
 
 void KidScreen::playMP3FromSD() {
-
+    extern MP3Player mp3Player;
     
-    // Find first MP3
     char mp3Path[128];
     if (!sdModule.getFirstMP3(mp3Path, sizeof(mp3Path))) {
         Serial.println("No MP3 found!");
         return;
     }
     
-    // Open file
-    if (!sdModule.openFile(mp3Path)) {
-        return;
-    }
-    
-    // Stream to VS1053
-    uint8_t buffer[512];
-    size_t bytesRead;
-    
-    Serial.println("Streaming MP3...");
-    while ((bytesRead = sdModule.readChunk(buffer, sizeof(buffer))) > 0) {
-        audioModule.sendMP3Data(buffer, bytesRead);
-    }
-    
-    sdModule.closeFile();
-    Serial.println("MP3 playback complete");
+    mp3Player.play(mp3Path);
 }
 
 void KidScreen::showAlbum(const char* albumName) {
@@ -228,6 +213,8 @@ void KidScreen::showAlbum(const char* albumName) {
 
 
 void KidScreen::clearAlbum() {
+    extern MP3Player mp3Player;
+    mp3Player.stop();
     Serial.println("Kid Screen: Clearing album (NFC removed)");
     
     albumLoaded = false;

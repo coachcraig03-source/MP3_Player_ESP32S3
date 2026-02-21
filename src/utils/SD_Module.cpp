@@ -124,8 +124,8 @@ size_t SD_Module::readChunk(uint8_t* buffer, size_t size) {
     }
     
     // Reinitialize SPI1 before reading
-    SPI.begin(SPI1_SCK, SPI1_MISO, SPI1_MOSI);
-    delay(1);
+    //SPI.begin(SPI1_SCK, SPI1_MISO, SPI1_MOSI);
+    //delay(1);
     
     return currentFile.read(buffer, size);
 }

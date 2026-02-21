@@ -51,7 +51,7 @@ void VS1053_Module::setVolume(uint8_t volume) {
     Serial.printf("VS1053: Volume set to %d%%\n", volume);
         // Read it back to verify
     delay(10);
-    SPI.beginTransaction(SPISettings(250000, MSBFIRST, SPI_MODE0));
+    SPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
     digitalWrite(_cs, LOW);
     SPI.transfer(0x03);  // Read command
     SPI.transfer(SCI_VOL);  // This is defined at top of .cpp file
@@ -63,8 +63,8 @@ void VS1053_Module::setVolume(uint8_t volume) {
     Serial.printf("VS1053: Volume readback = 0x%04X\n", readBack);
 
     // Re-enable sine test mode (in case volume write cleared it)
-    delay(10);
-    SPI.beginTransaction(SPISettings(250000, MSBFIRST, SPI_MODE0));
+    /*delay(10);
+    SPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
     digitalWrite(_cs, LOW);
     SPI.transfer(0x02);  // Write
     SPI.transfer(0x00);  // MODE register
@@ -73,7 +73,7 @@ void VS1053_Module::setVolume(uint8_t volume) {
     digitalWrite(_cs, HIGH);
     SPI.endTransaction();
 
-    Serial.println("VS1053: Sine test mode re-enabled after volume change");
+    Serial.println("VS1053: Sine test mode re-enabled after volume change");*/
 }
 
 
@@ -144,7 +144,7 @@ void VS1053_Module::playTestTone(uint16_t frequency) {
     delay(10);
     
     // Enable sine test mode
-    SPI.beginTransaction(SPISettings(250000, MSBFIRST, SPI_MODE0));
+    SPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
     digitalWrite(_cs, LOW);
     SPI.transfer(0x02);  // Write command
     SPI.transfer(0x00);  // MODE register
@@ -158,7 +158,7 @@ void VS1053_Module::playTestTone(uint16_t frequency) {
     while (!digitalRead(_dreq)) delay(1);
     
     // Start sine test (continuous)
-    SPI.beginTransaction(SPISettings(250000, MSBFIRST, SPI_MODE0));
+    SPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
     digitalWrite(_dcs, LOW);
     SPI.transfer(0x53);  // 'S'
     SPI.transfer(0xEF);
@@ -227,7 +227,7 @@ void VS1053_Module::writeRegister(uint8_t reg, uint16_t value) {
 uint16_t VS1053_Module::readRegister(uint8_t reg) {
     while (!digitalRead(_dreq)) delay(1);
     
-    SPI.beginTransaction(SPISettings(250000, MSBFIRST, SPI_MODE0));
+    SPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
     digitalWrite(_cs, LOW);
     SPI.transfer(0x03);  // Read command
     SPI.transfer(reg);
@@ -253,22 +253,18 @@ bool VS1053_Module::isReadyForData() {
 }
 
 void VS1053_Module::sendMP3Data(uint8_t* data, size_t len) {
-    // Reinitialize SPI1
-    SPI.begin(SPI1_SCK, SPI1_MISO, SPI1_MOSI);
-    delay(1);
-    
-    // Send data in 32-byte chunks (VS1053 buffer size)
+    // Send data in 32-byte chunks with DREQ checking
     size_t sent = 0;
     while (sent < len) {
         // Wait for DREQ (chip ready for data)
         while (!digitalRead(_dreq)) {
-            delay(1);
+            delayMicroseconds(10);
         }
         
         // Send up to 32 bytes
         size_t chunkSize = min((size_t)32, len - sent);
         
-        SPI.beginTransaction(SPISettings(250000, MSBFIRST, SPI_MODE0));
+        SPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
         digitalWrite(_dcs, LOW);
         for (size_t i = 0; i < chunkSize; i++) {
             SPI.transfer(data[sent + i]);
