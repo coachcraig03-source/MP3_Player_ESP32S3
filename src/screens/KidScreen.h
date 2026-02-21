@@ -14,6 +14,7 @@ class SD_Module;  // Add this forward declaration
 
 class KidScreen : public BaseScreen {
 public:
+
     KidScreen(ScreenManager& manager, TFT_Module& tft, VS1053_Module& audio, SD_Module& sd);
 
     void begin() override;
@@ -29,9 +30,14 @@ public:
     void playMP3FromSD();
     // Album art display
     void displayAlbumArt();
+    void prevTrack();     
+    void nextTrack();
 
 
 private:
+    char trackNames[100][64];
+    int trackCount;
+    int currentTrack;
     void drawWaitingScreen();
     void drawPlaybackScreen();
     

@@ -35,6 +35,7 @@ public:
     
     // Status
     bool isPlaying() const { return state == PLAYING; }
+    bool hasEnded() const { return state == IDLE && !needsOpen; } 
     bool isPaused() const { return state == PAUSED; }
     PlaybackState getState() const { return state; }
 

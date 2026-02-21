@@ -31,6 +31,7 @@ public:
     void showMP3();
     void showKids();
     void showCalibration();
+    void handleSongEnd(); 
     
     // Access to screens (for inter-screen communication)
     KidScreen* getKidScreen() { return kidScreen; }

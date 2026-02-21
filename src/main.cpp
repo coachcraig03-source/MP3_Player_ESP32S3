@@ -76,12 +76,12 @@ void setup() {
   
   Serial.println("\nInitializing VS1053 Audio...");
   audioModule.begin();
-  audioModule.setVolume(50);
+  audioModule.setVolume(35);
   
   // TEST: Verify audio output works
   Serial.println("Testing audio output...");
   audioModule.playTestTone(440);
-  delay(2000);
+  delay(1000);
   audioModule.stopPlayback();
   Serial.println("Audio test complete");
   
@@ -148,7 +148,15 @@ void setup() {
 
 void loop() {
   // DO NOT call mp3Player.update() - it runs on Core 0
-  
+  static bool wasPlaying = false;
+  bool nowPlaying = mp3Player.isPlaying();
+
+    if (wasPlaying && !nowPlaying && !mp3Player.isPlaying()) {
+        // Song just ended - notify current screen
+        screenManager.handleSongEnd();
+    }
+
+    wasPlaying = nowPlaying;
   // Update screen animations
   screenManager.update();
   

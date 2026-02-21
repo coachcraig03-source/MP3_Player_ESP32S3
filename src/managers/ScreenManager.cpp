@@ -85,3 +85,11 @@ void ScreenManager::handleTouch(int x, int y) {
 bool ScreenManager::isOnCalibrationScreen() const {
     return (currentScreen == calibrationScreen);
 }
+
+void ScreenManager::handleSongEnd() {
+    if (currentScreen == kidScreen) {
+        kidScreen->nextTrack();
+    } else if (currentScreen == mp3screen) {
+        mp3screen->nextTrack();
+    }
+}

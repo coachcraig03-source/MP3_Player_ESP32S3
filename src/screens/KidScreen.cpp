@@ -151,6 +151,15 @@ void KidScreen::handleTouch(int x, int y) {
         screenManager.showSplash();
         return;
     }
+
+    if (prevButton.hit(x, y)) {
+        prevTrack();
+        return;
+    }
+    if (nextButton.hit(x, y)) {
+        nextTrack();
+        return;
+    }
     
     // Playback controls only available when album is loaded
     if (albumLoaded) {
@@ -199,18 +208,76 @@ void KidScreen::showAlbum(const char* albumName) {
     
     drawPlaybackScreen();
     
-    // Play test tone when album loads
-    //audioModule.playTestTone(440);
-    // Play first MP3 instead of tone
-
-    // Display album art BEFORE starting music
-    displayAlbumArt();
+    // Search for album on SD card
+    char searchPath[128];
+    snprintf(searchPath, sizeof(searchPath), "/%s", albumName);
     
-
-    playMP3FromSD();
-
+    // Check if album folder exists
+    extern SdFat sd;
+    FsFile albumDir;
+    if (!albumDir.open(searchPath)) {
+        // Album not found - show error
+        auto display = tft.getTFT();
+        display->fillRect(0, 100, 480, 100, TFT_RED);
+        display->setTextColor(TFT_WHITE);
+        display->setTextDatum(middle_center);
+        display->setTextSize(2);
+        display->drawString("Album Not Found:", 240, 140);
+        display->drawString(albumName, 240, 170);
+        
+        Serial.printf("Album '%s' not found on SD card\n", albumName);
+        albumLoaded = false;
+        isPlaying = false;
+        return;
+    }
+    
+    // Load ALL tracks from album
+    trackCount = 0;
+    currentTrack = 0;
+    FsFile file;
+    
+    while (file.openNext(&albumDir, O_RDONLY) && trackCount < 100) {
+        char fileName[64];
+        file.getName(fileName, sizeof(fileName));
+        
+        if (strstr(fileName, ".mp3") || strstr(fileName, ".MP3")) {
+            strncpy(trackNames[trackCount], fileName, sizeof(trackNames[0]) - 1);
+            trackNames[trackCount][sizeof(trackNames[0]) - 1] = '\0';
+            trackCount++;
+        }
+        file.close();
+    }
+    albumDir.close();
+    
+    Serial.printf("Loaded %d tracks from album\n", trackCount);
+    
+    if (trackCount == 0) {
+        // No MP3s in folder
+        auto display = tft.getTFT();
+        display->fillRect(0, 100, 480, 100, TFT_RED);
+        display->setTextColor(TFT_WHITE);
+        display->setTextDatum(middle_center);
+        display->setTextSize(2);
+        display->drawString("No Music Found in:", 240, 140);
+        display->drawString(albumName, 240, 170);
+        
+        albumLoaded = false;
+        isPlaying = false;
+        return;
+    }
+    
+    // Display album art BEFORE starting playback
+    displayAlbumArt();
+    delay(100);
+    
+    // Play first track
+    char firstTrack[256];
+    snprintf(firstTrack, sizeof(firstTrack), "%s/%s", searchPath, trackNames[0]);
+    Serial.printf("Playing: %s\n", firstTrack);
+    
+    extern MP3Player mp3Player;
+    mp3Player.play(firstTrack);
 }
-
 
 void KidScreen::clearAlbum() {
     extern MP3Player mp3Player;
@@ -234,24 +301,17 @@ void KidScreen::displayAlbumArt() {
     char albumPath[128];
     char mp3Path[128];
     Serial.println("=== DISPLAY ALBUM ART CALLED ===");
-    if (!sdModule.getFirstMP3(mp3Path, sizeof(mp3Path))) {
-        Serial.println("No albums found for art");
-        return;
-    }
     
-    // Extract folder path from MP3 path (everything before last /)
-    strncpy(albumPath, mp3Path, sizeof(albumPath));
-    char* lastSlash = strrchr(albumPath, '/');
-    if (lastSlash) {
-        *lastSlash = '\0';  // Truncate at last slash
-    }
+   // Use currentAlbum instead of searching for first MP3
+    snprintf(albumPath, sizeof(albumPath), "/%s", currentAlbum);
     
-    // Find album art in that folder
+    // Find album art in the current album folder
     char artPath[128];
     if (!sdModule.getAlbumArt(albumPath, artPath, sizeof(artPath))) {
         Serial.println("No album art found");
         return;
     }
+
     
     // Set up TJpg_Decoder
     TJpgDec.setJpgScale(1);  // 1:1 scale
@@ -299,4 +359,41 @@ void KidScreen::displayAlbumArt() {
     globalTFT = nullptr;
     
     Serial.println("Album art displayed!");
+}
+
+
+void KidScreen::nextTrack() {
+    currentTrack++;
+    if (currentTrack >= trackCount) {
+        currentTrack = 0;  // Loop back to start
+    }
+    
+    // Build path and play
+    char trackPath[256];
+    snprintf(trackPath, sizeof(trackPath), "/%s/%s", currentAlbum, trackNames[currentTrack]);
+    
+    Serial.printf("KidScreen: Next track - %s\n", trackPath);
+    
+    extern MP3Player mp3Player;
+    mp3Player.stop();
+    delay(50);
+    mp3Player.play(trackPath);
+}
+
+void KidScreen::prevTrack() {
+    currentTrack--;
+    if (currentTrack < 0) {
+        currentTrack = trackCount - 1;  // Wrap to last track
+    }
+    
+    // Build path and play
+    char trackPath[256];
+    snprintf(trackPath, sizeof(trackPath), "/%s/%s", currentAlbum, trackNames[currentTrack]);
+    
+    Serial.printf("KidScreen: Previous track - %s\n", trackPath);
+    
+    extern MP3Player mp3Player;
+    mp3Player.stop();
+    delay(50);
+    mp3Player.play(trackPath);
 }

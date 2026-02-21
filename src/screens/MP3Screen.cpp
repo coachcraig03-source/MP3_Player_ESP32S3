@@ -364,10 +364,37 @@ void MP3Screen::handleTouch(int x, int y) {
             drawLayout();
         } else {
             // Go back to splash
+            mp3Player.stop();
+            delay(100);
             screenManager.showSplash();
         }
         return;
     }
+
+    if (playPauseButton.hit(x, y)) {
+        isPlaying = !isPlaying;
+        playPauseButton.setLabel(isPlaying ? "Pause" : "Play");
+        playPauseButton.draw(tft);
+        Serial.println(isPlaying ? "Playing" : "Paused");
+        return;
+    }
+
+    if (nextButton.hit(x, y)) {
+        Serial.println("Next track");
+        nextTrack();  // Use the nextTrack() method we just created
+        return;
+    }
+    
+    if (prevButton.hit(x, y)) {
+    Serial.println("Previous track");
+    selectedTrack--;
+    if (selectedTrack < 0) {
+        selectedTrack = trackCount - 1;  // Wrap to last track
+    }
+    playTrack(selectedTrack);
+    drawLayout();
+    return;
+}
     
     // Volume slider
     if (volumeSlider.handleTouch(x, y)) {
@@ -438,4 +465,14 @@ void MP3Screen::playTrack(int index) {
     isPlaying = true;
     playPauseButton.setLabel("Pause");
     playPauseButton.draw(tft);
+}
+
+
+void MP3Screen::nextTrack() {
+    selectedTrack++;
+    if (selectedTrack >= trackCount) {
+        selectedTrack = 0;  // Loop album
+    }
+    playTrack(selectedTrack);
+    drawLayout();  // Update selection highlight
 }
