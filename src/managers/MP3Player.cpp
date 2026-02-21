@@ -7,23 +7,13 @@
 #include "../utils/VS1053_Module.h"
 
 MP3Player::MP3Player(SD_Module& sd, VS1053_Module& audio)
-    : sdModule(sd), audioModule(audio), state(IDLE)
+    : sdModule(sd), audioModule(audio), state(IDLE), needsOpen(false)
 {
 }
 
 bool MP3Player::play(const char* path) {
-    stop();
-    
-    if (!sdModule.openFile(path)) {
-        return false;
-    }
-    
-    // Reset VS1053 to ensure clean state
-    //audioModule.softReset();  // Make this public in VS1053_Module.h
-    delay(100);
-    
-    Serial.printf("MP3Player: Starting playback of %s\n", path);
-    state = PLAYING;
+    strncpy(pendingPath, path, sizeof(pendingPath));
+    needsOpen = true;
     return true;
 }
 
@@ -54,9 +44,17 @@ void MP3Player::stop() {
 
 
 void MP3Player::update() {
-    if (state != PLAYING) return;
+    // Handle file opening on this core
+    if (needsOpen) {
+        needsOpen = false;
+        if (sdModule.openFile(pendingPath)) {
+            Serial.printf("MP3Player: Starting playback\n");
+            state = PLAYING;
+        }
+        return;
+    }
     
-    //Serial.println("MP3Player::update() running"); // Add this
+    if (state != PLAYING) return;
     
     for (int i = 0; i < 32; i++) {
         streamChunk();

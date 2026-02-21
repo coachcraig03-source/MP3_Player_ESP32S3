@@ -177,10 +177,6 @@ void VS1053_Module::playTestTone(uint16_t frequency) {
 void VS1053_Module::stopPlayback() {
     Serial.println("VS1053: Stopping playback");
     
-    // Reinitialize SPI1 (in case TFT corrupted it)
-    SPI.begin(SPI1_SCK, SPI1_MISO, SPI1_MOSI);
-    delay(10);
-    
     // Wait for DREQ
     while (!digitalRead(_dreq)) delay(1);
     
@@ -201,14 +197,8 @@ void VS1053_Module::stopPlayback() {
     delay(10);
     
     // Disable sine test mode
-    SPI.beginTransaction(SPISettings(250000, MSBFIRST, SPI_MODE0));
-    digitalWrite(_cs, LOW);
-    SPI.transfer(0x02);  // Write command
-    SPI.transfer(0x00);  // MODE register
-    SPI.transfer(0x08);  // SM_SDINEW
-    SPI.transfer(0x04);  // + SM_RESET (no tests)
-    digitalWrite(_cs, HIGH);
-    SPI.endTransaction();
+    uint16_t mode = readRegister(SCI_MODE);
+    writeRegister(SCI_MODE, mode & ~0x0020);
 }
 
 void VS1053_Module::writeRegister(uint8_t reg, uint16_t value) {
@@ -227,7 +217,7 @@ void VS1053_Module::writeRegister(uint8_t reg, uint16_t value) {
 uint16_t VS1053_Module::readRegister(uint8_t reg) {
     while (!digitalRead(_dreq)) delay(1);
     
-    SPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
+    SPI.beginTransaction(SPISettings(250000, MSBFIRST, SPI_MODE0));
     digitalWrite(_cs, LOW);
     SPI.transfer(0x03);  // Read command
     SPI.transfer(reg);
@@ -258,7 +248,7 @@ void VS1053_Module::sendMP3Data(uint8_t* data, size_t len) {
     while (sent < len) {
         // Wait for DREQ (chip ready for data)
         while (!digitalRead(_dreq)) {
-            delayMicroseconds(10);
+            //delayMicroseconds(10);
         }
         
         // Send up to 32 bytes

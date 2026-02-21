@@ -38,6 +38,8 @@ public:
     PlaybackState getState() const { return state; }
 
 private:
+    char pendingPath[128];
+    bool needsOpen;
     SD_Module& sdModule;
     VS1053_Module& audioModule;
     

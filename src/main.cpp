@@ -25,6 +25,19 @@ ScreenManager screenManager(tftModule, audioModule, sdModule);
 // Touch interrupt
 volatile bool touchDetected = false;
 
+// Task handle
+TaskHandle_t mp3TaskHandle = NULL;
+
+// Task function running on Core 0
+void mp3StreamTask(void* parameter) {
+    MP3Player* player = (MP3Player*)parameter;
+    
+    while (true) {
+        player->update();
+        vTaskDelay(1);  // Yield 1ms
+    }
+}
+
 void IRAM_ATTR touchISR() {
   touchDetected = true;
 }
@@ -61,18 +74,18 @@ void setup() {
   digitalWrite(VS1053_RST, HIGH);
   delay(100);
   
- Serial.println("\nInitializing VS1053 Audio...");
-audioModule.begin();
-audioModule.setVolume(75);
-
-// TEST: Verify audio output works
-Serial.println("Testing audio output...");
-audioModule.playTestTone(440);
-delay(2000);
-audioModule.stopPlayback();
-Serial.println("Audio test complete");
-
-delay(100);
+  Serial.println("\nInitializing VS1053 Audio...");
+  audioModule.begin();
+  audioModule.setVolume(75);
+  
+  // TEST: Verify audio output works
+  Serial.println("Testing audio output...");
+  audioModule.playTestTone(440);
+  delay(2000);
+  audioModule.stopPlayback();
+  Serial.println("Audio test complete");
+  
+  delay(100);
   
   // Initialize SD Card
   Serial.println("\nInitializing SD Card...");
@@ -82,6 +95,19 @@ delay(100);
     Serial.println("SD Card ready!");
   }
   delay(100);
+  
+  // Create MP3 streaming task on Core 0 (AFTER SD init, BEFORE TFT)
+  Serial.println("\nCreating MP3 streaming task on Core 0...");
+  xTaskCreatePinnedToCore(
+      mp3StreamTask,
+      "MP3Stream",
+      10000,
+      &mp3Player,
+      1,
+      &mp3TaskHandle,
+      0
+  );
+  Serial.println("MP3 task created");
   
   // Initialize TFT
   Serial.println("\nInitializing TFT Display...");
@@ -121,8 +147,7 @@ delay(100);
 }
 
 void loop() {
-  // Update MP3 player (streams data to VS1053)
-  mp3Player.update();
+  // DO NOT call mp3Player.update() - it runs on Core 0
   
   // Update screen animations
   screenManager.update();
