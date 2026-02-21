@@ -221,8 +221,12 @@ void MP3Screen::drawTrackList() {
 }
 
 void MP3Screen::drawAlbumArt() {
-    /*auto display = tft.getTFT();
+    auto display = tft.getTFT();
+    extern MP3Player mp3Player;
     
+    mp3Player.stop();
+    delay(100);
+
     if (selectedAlbum < 0) {
         // Placeholder
         display->setTextSize(1);
@@ -263,18 +267,23 @@ void MP3Screen::drawAlbumArt() {
         globalTFT_MP3 = nullptr;
     }
     
-    delete[] buffer;*/
+    delete[] buffer;
 }
 
 void MP3Screen::selectAlbum(int index) {
+    extern MP3Player mp3Player;
+    
     if (index < 0 || index >= albumCount) return;
+
+    //mp3Player.stop();
+    //delay(100);
     
     selectedAlbum = index;
     Serial.printf("MP3Screen: Selected album '%s'\n", albumNames[index]);
     
     // Load album art FIRST (before starting playback to avoid SPI conflict)
-    //drawAlbumArt();
-    //delay(100);  // Let SPI settle
+    drawAlbumArt();
+    delay(100);  // Let SPI settle
     
     // Load tracks from this album folder
     trackCount = 0;
@@ -343,10 +352,13 @@ void MP3Screen::update() {
 }
 
 void MP3Screen::handleTouch(int x, int y) {
+    extern MP3Player mp3Player;
     // Back button
     if (backButton.hit(x, y)) {
         if (!inAlbumView) {
             // Go back to album list
+            mp3Player.stop();
+            delay(100);
             inAlbumView = true;
             scrollOffset = 0;
             drawLayout();
