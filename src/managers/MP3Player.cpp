@@ -40,15 +40,13 @@ void MP3Player::stop() {
     }
 }
 
-
-
-
 void MP3Player::update() {
     // Handle file opening on this core
     if (needsOpen) {
         needsOpen = false;
         if (sdModule.openFile(pendingPath)) {
             Serial.printf("MP3Player: Starting playback\n");
+            audioModule.setSampleRate(44100);  // Add this method
             state = PLAYING;
         }
         return;

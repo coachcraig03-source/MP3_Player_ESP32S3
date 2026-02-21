@@ -76,6 +76,10 @@ void VS1053_Module::setVolume(uint8_t volume) {
     Serial.println("VS1053: Sine test mode re-enabled after volume change");*/
 }
 
+void VS1053_Module::setSampleRate(uint16_t rate) {
+    writeRegister(0x05, rate);
+    Serial.printf("VS1053: Sample rate set to %d Hz\n", rate);
+}
 
 void VS1053_Module::begin() {
     Serial.println("VS1053: Initializing...");
@@ -109,10 +113,28 @@ void VS1053_Module::begin() {
         Serial.println("VS1053: ✗ DREQ timeout!");
         return;
     }
-    
+
     // Software reset
     Serial.println("VS1053: Sending software reset...");
     softReset();
+    delay(100);  // Add delay after soft reset
+    
+    // Set bass/treble to neutral
+    writeRegister(0x02, 0x0000);
+    writeRegister(SCI_CLOCKF, 0x8800); // 3.5x multiplier
+
+    
+    // Read current sample rate
+    uint16_t sampleRate = readRegister(0x05);
+    Serial.printf("VS1053 Sample Rate BEFORE: %d Hz\n", sampleRate);
+
+    // Force 44.1kHz stereo
+    writeRegister(0x05, 0xAC44);
+    delay(10);
+    
+    // Verify it stuck
+    sampleRate = readRegister(0x05);
+    Serial.printf("VS1053 Sample Rate AFTER: %d Hz\n", sampleRate);
     
     Serial.println("VS1053: ✓ Initialization complete");
 }

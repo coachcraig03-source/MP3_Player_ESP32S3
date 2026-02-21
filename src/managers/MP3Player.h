@@ -31,6 +31,7 @@ public:
     
     // Update (call from main loop)
     void update();
+
     
     // Status
     bool isPlaying() const { return state == PLAYING; }

@@ -22,6 +22,7 @@ public:
     // MP3 playback
     void sendMP3Data(uint8_t* data, size_t len);
     bool isReadyForData();
+    void setSampleRate(uint16_t rate);
     
     // Volume control (0-100, where 100 is loudest)
     void setVolume(uint8_t volume);
