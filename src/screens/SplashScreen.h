@@ -18,7 +18,7 @@ public:
 
 private:
     UIButton kidsButton;
-    UIButton adultButton;
+    UIButton mp3Button;
     UIButton calibrateButton;
 };
 

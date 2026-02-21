@@ -34,18 +34,15 @@ VS1053_Module::VS1053_Module(uint8_t cs, uint8_t dcs, uint8_t dreq, uint8_t rst)
 }
 
 void VS1053_Module::setVolume(uint8_t volume) {
-    // Volume: 0-100 (0=silent, 100=loudest)
-    // VS1053 uses 0x00=loudest, 0xFE=quietest (inverted!)
-    
-    // Map 0-100 to 0xFE-0x00 (inverted)
-    uint8_t vs1053_vol = map(volume, 0, 100, 0xFE, 0x00);
+    // Map 0-100 to 0x50-0x00 (usable range)
+    // 0x50 = -40dB (quiet), 0x00 = 0dB (max)
+    uint8_t vs1053_vol = map(volume, 0, 100, 0x50, 0x00);  // ADD THIS LINE
+    uint16_t vol_stereo = (vs1053_vol << 8) | vs1053_vol;
     
     // Reinitialize SPI1
-    SPI.begin(SPI1_SCK, SPI1_MISO, SPI1_MOSI);
-    delay(5);
-    
-    // Set both left and right channels to same volume
-    uint16_t vol_stereo = (vs1053_vol << 8) | vs1053_vol;
+    //SPI.begin(SPI1_SCK, SPI1_MISO, SPI1_MOSI);
+    //delay(5);
+
     writeRegister(SCI_VOL, vol_stereo);
     
     Serial.printf("VS1053: Volume set to %d%%\n", volume);
@@ -268,9 +265,14 @@ void VS1053_Module::sendMP3Data(uint8_t* data, size_t len) {
     // Send data in 32-byte chunks with DREQ checking
     size_t sent = 0;
     while (sent < len) {
-        // Wait for DREQ (chip ready for data)
+        // Wait for DREQ, feed watchdog periodically
+        int loopCount = 0;
         while (!digitalRead(_dreq)) {
-            //delayMicroseconds(10);
+            delayMicroseconds(10);
+            if (++loopCount > 100) {  // Every 1ms
+                vTaskDelay(0);  // Feed watchdog
+                loopCount = 0;
+            }
         }
         
         // Send up to 32 bytes

@@ -8,7 +8,7 @@
 class TFT_Module;
 class BaseScreen;
 class SplashScreen;
-class AdultScreen;
+class MP3Screen;
 class KidScreen;
 class CalibrationScreen;
 class VS1053_Module;
@@ -28,13 +28,13 @@ public:
 
     // Navigation helpers
     void showSplash();
-    void showAdult();
+    void showMP3();
     void showKids();
     void showCalibration();
     
     // Access to screens (for inter-screen communication)
     KidScreen* getKidScreen() { return kidScreen; }
-    AdultScreen* getAdultScreen() { return adultScreen; }
+    MP3Screen* getMP3Screen() { return mp3screen; }
     
     // Get TFT reference for screens
     TFT_Module& getTFT() { return tft; }
@@ -48,7 +48,7 @@ private:
     
     BaseScreen* currentScreen;
     SplashScreen* splashScreen;
-    AdultScreen* adultScreen;
+    MP3Screen* mp3screen;
     KidScreen* kidScreen;
     CalibrationScreen* calibrationScreen;
 };

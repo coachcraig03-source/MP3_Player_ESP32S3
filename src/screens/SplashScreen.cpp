@@ -10,12 +10,12 @@
 SplashScreen::SplashScreen(ScreenManager& manager, TFT_Module& tftModule)
     : BaseScreen(manager, tftModule),
       kidsButton(60, 140, 160, 80, "Kids Mode"),
-      adultButton(260, 140, 160, 80, "Adult Mode"),
+      mp3Button(260, 140, 160, 80, "MP3 Mode"),
       calibrateButton(160, 240, 160, 50, "Calibrate")
 {
     // Customize button colors
     kidsButton.setColors(0x07E0, TFT_YELLOW, TFT_WHITE);   // Green bg, yellow border
-    adultButton.setColors(0x001F, TFT_CYAN, TFT_WHITE);    // Blue bg, cyan border
+    mp3Button.setColors(0x001F, TFT_CYAN, TFT_WHITE);    // Blue bg, cyan border
     calibrateButton.setColors(0x632C, TFT_WHITE, TFT_WHITE); // Gray bg
 }
 
@@ -38,7 +38,7 @@ void SplashScreen::begin() {
     
     // Draw buttons
     kidsButton.draw(tft);
-    adultButton.draw(tft);
+    mp3Button.draw(tft);
     calibrateButton.draw(tft);
 }
 
@@ -53,9 +53,9 @@ void SplashScreen::handleTouch(int x, int y) {
         return;
     }
     
-    if (adultButton.hit(x, y)) {
-        Serial.println("Adult Mode selected");
-        screenManager.showAdult();
+    if (mp3Button.hit(x, y)) {
+        Serial.println("MP3 Mode selected");
+        screenManager.showMP3();
         return;
     }
     

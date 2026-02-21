@@ -76,7 +76,7 @@ void setup() {
   
   Serial.println("\nInitializing VS1053 Audio...");
   audioModule.begin();
-  audioModule.setVolume(75);
+  audioModule.setVolume(50);
   
   // TEST: Verify audio output works
   Serial.println("Testing audio output...");

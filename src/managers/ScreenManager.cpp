@@ -4,7 +4,7 @@
 
 #include "ScreenManager.h"
 #include "../screens/SplashScreen.h"
-#include "../screens/AdultScreen.h"
+#include "../screens/MP3Screen.h"
 #include "../screens/KidScreen.h"
 #include "../screens/CalibrationScreen.h"
 #include "../utils/TouchCalibration.h"
@@ -15,7 +15,7 @@ ScreenManager::ScreenManager(TFT_Module& tftRef, VS1053_Module& audio, SD_Module
       sdModule(sd),
       currentScreen(nullptr),
       splashScreen(nullptr),
-      adultScreen(nullptr),
+      mp3screen(nullptr),
       kidScreen(nullptr),
       calibrationScreen(nullptr)
 {
@@ -23,7 +23,7 @@ ScreenManager::ScreenManager(TFT_Module& tftRef, VS1053_Module& audio, SD_Module
 
 ScreenManager::~ScreenManager() {
     delete splashScreen;
-    delete adultScreen;
+    delete mp3screen;
     delete kidScreen;
     delete calibrationScreen;
 }
@@ -31,7 +31,7 @@ ScreenManager::~ScreenManager() {
 void ScreenManager::begin() {
     // Create all screens
     splashScreen = new SplashScreen(*this, tft);
-    adultScreen = new AdultScreen(*this, tft);
+    mp3screen = new MP3Screen(*this, tft, sdModule, audioModule);
     kidScreen = new KidScreen(*this, tft, audioModule, sdModule);
     
     // Start with splash screen
@@ -42,8 +42,8 @@ void ScreenManager::showSplash() {
     switchTo(splashScreen);
 }
 
-void ScreenManager::showAdult() {
-    switchTo(adultScreen);
+void ScreenManager::showMP3() {
+    switchTo(mp3screen);
 }
 
 void ScreenManager::showKids() {
