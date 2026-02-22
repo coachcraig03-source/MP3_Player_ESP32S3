@@ -76,12 +76,12 @@ void setup() {
   
   Serial.println("\nInitializing VS1053 Audio...");
   audioModule.begin();
-  audioModule.setVolume(35);
+  audioModule.setVolume(55);
   
   // TEST: Verify audio output works
   Serial.println("Testing audio output...");
-  audioModule.playTestTone(440);
-  delay(1000);
+  audioModule.playTestTone(261);  //middle C
+  delay(500);
   audioModule.stopPlayback();
   Serial.println("Audio test complete");
   
@@ -151,12 +151,14 @@ void loop() {
   static bool wasPlaying = false;
   bool nowPlaying = mp3Player.isPlaying();
 
-    if (wasPlaying && !nowPlaying && !mp3Player.isPlaying()) {
-        // Song just ended - notify current screen
+    // Only auto-advance if user didn't just manually advance
+    static unsigned long lastManualAdvance = 0;
+    if (wasPlaying && !nowPlaying && !mp3Player.isPlaying() && 
+        millis() - lastManualAdvance > 1000) {  // 1 second debounce
         screenManager.handleSongEnd();
     }
-
     wasPlaying = nowPlaying;
+
   // Update screen animations
   screenManager.update();
   
@@ -171,6 +173,7 @@ void loop() {
     TS_Point p = touchScreen.getPoint();
     if (p.x != 0 && p.y != 0) {
       screenManager.handleTouch(p.x, p.y);
+      lastManualAdvance = millis();  // Mark manual advance time    
     }
   }
 }

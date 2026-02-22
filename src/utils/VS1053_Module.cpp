@@ -261,18 +261,48 @@ bool VS1053_Module::isReadyForData() {
     return digitalRead(_dreq) == HIGH;
 }
 
+/*
+differenet watchdog code if I get too many
+
+cppwhile (sent < len) {
+    // Wait for DREQ with watchdog feeding
+    int loopCount = 0;
+    while (!digitalRead(_dreq)) {
+        if (++loopCount > 100) {  // Every 100 iterations
+            vTaskDelay(0);  // Feed watchdog
+            loopCount = 0;
+        }
+    }
+    
+    // Send up to 32 bytes
+    size_t chunkSize = min((size_t)32, len - sent);
+    
+    SPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
+    digitalWrite(_dcs, LOW);
+    for (size_t i = 0; i < chunkSize; i++) {
+        SPI.transfer(data[sent + i]);
+    }
+    digitalWrite(_dcs, HIGH);
+    SPI.endTransaction();
+    
+    sent += chunkSize;
+}*/
+
 void VS1053_Module::sendMP3Data(uint8_t* data, size_t len) {
-    // Send data in 32-byte chunks with DREQ checking
     size_t sent = 0;
     while (sent < len) {
-        // Wait for DREQ, feed watchdog periodically
-        int loopCount = 0;
-        while (!digitalRead(_dreq)) {
+        // Wait for DREQ with aggressive watchdog feeding
+        int timeout = 10000;  // Timeout after ~100ms
+        while (!digitalRead(_dreq) && timeout-- > 0) {
             delayMicroseconds(10);
-            if (++loopCount > 100) {  // Every 1ms
-                vTaskDelay(0);  // Feed watchdog
-                loopCount = 0;
+            if (timeout % 10 == 0) {  // Yield every 100us instead of every 1ms
+                vTaskDelay(0);
             }
+        }
+        
+        if (timeout == 0) {
+            Serial.println("VS1053: DREQ timeout, skipping chunk");
+            return;  // Skip this chunk
         }
         
         // Send up to 32 bytes

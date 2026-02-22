@@ -14,6 +14,17 @@
 // Add this global pointer (ugly but TJpg_Decoder needs it)
 TFT_Module* globalTFT = nullptr;
 
+// Helper: normalize album name for matching
+String normalizeAlbumName(const char* name) {
+    String normalized = String(name);
+    normalized.toLowerCase();
+    normalized.replace("'", "");
+    normalized.replace("\"", "");
+    normalized.replace("  ", " ");  // Double spaces
+    normalized.trim();
+    return normalized;
+}
+
 // Add this callback function BEFORE the KidScreen class methods:
 bool tftOutput(int16_t x, int16_t y, uint16_t w, uint16_t h, uint16_t* bitmap) {
     // This function is called by TJpg_Decoder to output decoded JPEG data
@@ -198,6 +209,15 @@ void KidScreen::playMP3FromSD() {
 }
 
 void KidScreen::showAlbum(const char* albumName) {
+    extern MP3Player mp3Player;
+    mp3Player.stop();
+    delay(200);  // Let everything settle
+    
+    // Reset VS1053 to clear any WMA decoder state
+    audioModule.softReset();
+    delay(100);
+
+
     strncpy(currentAlbum, albumName, sizeof(currentAlbum) - 1);
     currentAlbum[sizeof(currentAlbum) - 1] = '\0';
     
@@ -208,14 +228,41 @@ void KidScreen::showAlbum(const char* albumName) {
     
     drawPlaybackScreen();
     
-    // Search for album on SD card
-    char searchPath[128];
-    snprintf(searchPath, sizeof(searchPath), "/%s", albumName);
-    
-    // Check if album folder exists
+    // Fuzzy match album folder (case-insensitive, apostrophe-tolerant)
     extern SdFat sd;
-    FsFile albumDir;
-    if (!albumDir.open(searchPath)) {
+    FsFile root;
+    root.open("/");
+    
+    String targetNorm = normalizeAlbumName(albumName);
+    bool found = false;
+    char actualFolderName[128];
+    
+    FsFile dir;
+    while (dir.openNext(&root, O_RDONLY)) {
+        if (dir.isDirectory()) {
+            char name[128];
+            dir.getName(name, sizeof(name));
+            
+            // Skip system folders
+            if (name[0] == '.' || strcmp(name, "System Volume Information") == 0) {
+                dir.close();
+                continue;
+            }
+            
+            String nameNorm = normalizeAlbumName(name);
+            if (nameNorm == targetNorm) {
+                strncpy(actualFolderName, name, sizeof(actualFolderName));
+                strncpy(currentAlbum, name, sizeof(currentAlbum));  // ADD THIS - store actual name
+                found = true;
+                dir.close();
+                break;
+            }
+        }
+        dir.close();
+    }
+    root.close();
+    
+    if (!found) {
         // Album not found - show error
         auto display = tft.getTFT();
         display->fillRect(0, 100, 480, 100, TFT_RED);
@@ -231,6 +278,37 @@ void KidScreen::showAlbum(const char* albumName) {
         return;
     }
     
+    // Use the actual folder name (with correct capitalization and apostrophes)
+    char searchPath[128];
+    snprintf(searchPath, sizeof(searchPath), "/%s", actualFolderName);
+    Serial.printf("Matched to folder: %s\n", actualFolderName);
+    
+    // Open the matched folder
+    FsFile albumDir;
+
+    if (!albumDir.open(searchPath)) {  // ADD THE if (!  ) CHECK
+    Serial.printf("ERROR: Failed to open %s\n", searchPath);
+    albumLoaded = false;
+    isPlaying = false;
+    return;
+    }
+    Serial.println("Folder opened successfully");  // ADD THIS
+
+// Debug: List what's in the folder
+FsFile testFile;
+Serial.println("Contents of folder:");
+while (testFile.openNext(&albumDir, O_RDONLY)) {
+    char testName[64];
+    testFile.getName(testName, sizeof(testName));
+    Serial.printf("  Found: %s (isDir: %d)\n", testName, testFile.isDirectory());
+    testFile.close();
+}
+
+// Rewind before actual scan
+albumDir.rewind();
+
+
+    
     // Load ALL tracks from album
     trackCount = 0;
     currentTrack = 0;
@@ -240,11 +318,13 @@ void KidScreen::showAlbum(const char* albumName) {
         char fileName[64];
         file.getName(fileName, sizeof(fileName));
         
-        if (strstr(fileName, ".mp3") || strstr(fileName, ".MP3")) {
+        if (strstr(fileName, ".mp3") || strstr(fileName, ".MP3") || 
+            strstr(fileName, ".wma") || strstr(fileName, ".WMA")) {
             strncpy(trackNames[trackCount], fileName, sizeof(trackNames[0]) - 1);
             trackNames[trackCount][sizeof(trackNames[0]) - 1] = '\0';
             trackCount++;
         }
+
         file.close();
     }
     albumDir.close();
@@ -376,7 +456,7 @@ void KidScreen::nextTrack() {
     
     extern MP3Player mp3Player;
     mp3Player.stop();
-    delay(50);
+    delay(300);
     mp3Player.play(trackPath);
 }
 
@@ -394,6 +474,6 @@ void KidScreen::prevTrack() {
     
     extern MP3Player mp3Player;
     mp3Player.stop();
-    delay(50);
+    delay(300);
     mp3Player.play(trackPath);
 }

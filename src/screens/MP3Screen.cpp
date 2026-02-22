@@ -15,7 +15,7 @@
 
 #define LIST_X 220
 #define LIST_Y 60
-#define LIST_W 250
+#define LIST_W 200
 #define LIST_H 200
 #define ITEM_HEIGHT 18
 #define MAX_VISIBLE 10
@@ -23,11 +23,26 @@
 // Global for JPEG decoder callback
 TFT_Module* globalTFT_MP3 = nullptr;
 
+
+
 bool tftOutput_MP3(int16_t x, int16_t y, uint16_t w, uint16_t h, uint16_t* bitmap) {
-    if (globalTFT_MP3 && bitmap) {
-        auto display = globalTFT_MP3->getTFT();
-        display->pushImage(x, y, w, h, bitmap);
+    if (!globalTFT_MP3) {
+        Serial.println("ERROR: globalTFT_MP3 is NULL!");
+        return false;
     }
+    
+    if (!bitmap) {
+        Serial.println("ERROR: bitmap is NULL!");
+        return false;
+    }
+    
+    auto display = globalTFT_MP3->getTFT();
+    if (!display) {
+        Serial.println("ERROR: display is NULL!");
+        return false;
+    }
+    
+    display->pushImage(x, y, w, h, bitmap);
     return true;
 }
 
@@ -262,6 +277,9 @@ void MP3Screen::drawAlbumArt() {
         globalTFT_MP3 = &tft;
         
         // Draw at 10,60 (200x200 box)
+        // Right before TJpgDec.drawJpg():
+        globalTFT_MP3 = &tft;  // Make SURE this is set
+
         TJpgDec.drawJpg(10, 60, buffer, totalRead);
         
         globalTFT_MP3 = nullptr;
@@ -273,17 +291,27 @@ void MP3Screen::drawAlbumArt() {
 void MP3Screen::selectAlbum(int index) {
     extern MP3Player mp3Player;
     
+    Serial.printf("Free heap: %d bytes\n", ESP.getFreeHeap());
+
     if (index < 0 || index >= albumCount) return;
 
     //mp3Player.stop();
     //delay(100);
     
+    // Stop and reset everything first
+    mp3Player.stop();
+    delay(200);
+    
+    // Reset VS1053 to clear decoder state (especially after WMA)
+    audioModule.softReset();
+    delay(100);
+
     selectedAlbum = index;
     Serial.printf("MP3Screen: Selected album '%s'\n", albumNames[index]);
     
     // Load album art FIRST (before starting playback to avoid SPI conflict)
-    drawAlbumArt();
-    delay(100);  // Let SPI settle
+    //drawAlbumArt();
+    //delay(100);  // Let SPI settle
     
     // Load tracks from this album folder
     trackCount = 0;
@@ -304,14 +332,20 @@ void MP3Screen::selectAlbum(int index) {
         char name[64];
         file.getName(name, sizeof(name));
         
-        if (strstr(name, ".mp3") || strstr(name, ".MP3")) {
+        if (strstr(name, ".mp3") || strstr(name, ".MP3") || 
+            strstr(name, ".wma") || strstr(name, ".WMA")) {
             strncpy(trackNames[trackCount], name, sizeof(trackNames[0]) - 1);
             trackNames[trackCount][sizeof(trackNames[0]) - 1] = '\0';
             trackCount++;
         }
+        
         file.close();
     }
     albumDir.close();
+
+    // Load album art FIRST (before starting playback to avoid SPI conflict)
+    drawAlbumArt();
+    delay(100);  // Let SPI settle
     
     Serial.printf("Loaded %d tracks\n", trackCount);
 
@@ -365,7 +399,7 @@ void MP3Screen::handleTouch(int x, int y) {
         } else {
             // Go back to splash
             mp3Player.stop();
-            delay(100);
+            delay(300);
             screenManager.showSplash();
         }
         return;
@@ -384,7 +418,7 @@ void MP3Screen::handleTouch(int x, int y) {
         nextTrack();  // Use the nextTrack() method we just created
         return;
     }
-    
+
     if (prevButton.hit(x, y)) {
     Serial.println("Previous track");
     selectedTrack--;

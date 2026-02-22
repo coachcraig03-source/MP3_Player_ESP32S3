@@ -14,6 +14,7 @@ public:
     void begin();
     bool isAlive();
     void getChipInfo();
+    void softReset();
     
     // Playback control
     void stopPlayback();
@@ -33,7 +34,7 @@ private:
     void writeRegister(uint8_t reg, uint16_t value);
     uint16_t readRegister(uint8_t reg);
     void writeData(uint8_t data);
-    void softReset();
+
 };
 
 #endif // VS1053_MODULE_H
