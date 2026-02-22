@@ -10,6 +10,8 @@
 #include "managers/ScreenManager.h"
 #include "utils/SD_Module.h"
 #include "managers/MP3Player.h"
+#include <WiFi.h>
+#include <time.h>
 
 // Hardware modules
 RC522_Module nfcModule(NFC_CS, NFC_RST);
@@ -27,6 +29,39 @@ volatile bool touchDetected = false;
 
 // Task handle
 TaskHandle_t mp3TaskHandle = NULL;
+
+// WiFi credentials (hard-coded for now)
+const char* WIFI_SSID = "Galactia_Guest";
+const char* WIFI_PASSWORD = "SantaClaus1993";
+
+// NTP server
+const char* NTP_SERVER = "pool.ntp.org";
+const long GMT_OFFSET_SEC = -28800;  // PST = UTC-8 hours
+const int DAYLIGHT_OFFSET_SEC = 3600;  // DST adjustment
+
+void setupWiFi() {
+    Serial.println("\n=== Connecting to WiFi ===");
+    WiFi.mode(WIFI_STA);
+    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+    
+    int attempts = 0;
+    while (WiFi.status() != WL_CONNECTED && attempts < 20) {
+        delay(500);
+        Serial.print(".");
+        attempts++;
+    }
+    
+    if (WiFi.status() == WL_CONNECTED) {
+        Serial.println("\nWiFi connected!");
+        Serial.printf("IP: %s\n", WiFi.localIP().toString().c_str());
+        
+        // Configure time
+        configTime(GMT_OFFSET_SEC, DAYLIGHT_OFFSET_SEC, NTP_SERVER);
+        Serial.println("Time configured from NTP");
+    } else {
+        Serial.println("\nWiFi connection failed");
+    }
+}
 
 // Task function running on Core 0
 void mp3StreamTask(void* parameter) {
@@ -47,6 +82,11 @@ void setup() {
   delay(4000);
   
   Serial.println("\n=== NFC MP3 Player Starting ===\n");
+
+  //  Serial.printf("Free heap before WiFi: %d bytes\n", ESP.getFreeHeap());
+  // Connect to WiFi
+  //setupWiFi();
+ // Serial.printf("Free heap after WiFi: %d bytes\n", ESP.getFreeHeap());
   
   // Hard reset RC522 first (before any SPI init)
   pinMode(NFC_RST, OUTPUT);
@@ -95,7 +135,9 @@ void setup() {
     Serial.println("SD Card ready!");
   }
   delay(100);
-  
+
+
+
   // Create MP3 streaming task on Core 0 (AFTER SD init, BEFORE TFT)
   Serial.println("\nCreating MP3 streaming task on Core 0...");
   xTaskCreatePinnedToCore(
@@ -142,6 +184,8 @@ void setup() {
   // Initialize Screen Manager
   Serial.println("\nInitializing Screen Manager...");
   screenManager.begin();
+
+
   
   Serial.println("\n=== System Ready ===\n");
 }

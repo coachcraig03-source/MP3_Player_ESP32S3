@@ -25,11 +25,11 @@ void SettingsScreen::begin() {
     
     display->fillScreen(TFT_BLACK);
     
-    // Title
+    // Title - centered
     display->setTextColor(TFT_WHITE);
-    display->setTextDatum(top_left);
-    display->setTextSize(2);
-    display->drawString("SETTINGS", 100, 15);
+    display->setTextDatum(top_center);
+    display->setTextSize(3);
+    display->drawString("SETTINGS", 240, 15);
     
     // Draw buttons
     backButton.draw(tft);
@@ -44,11 +44,11 @@ void SettingsScreen::begin() {
 void SettingsScreen::drawSettingsList() {
     auto display = tft.getTFT();
     
-    int yPos = 70;
+    int yPos = 80;
     
     // Touch Calibration section
-    display->fillRect(20, yPos, 440, 60, TFT_DARKGREY);
-    display->drawRect(20, yPos, 440, 60, TFT_WHITE);
+    display->fillRect(20, yPos, 440, 70, 0x2104);  // Dark gray
+    display->drawRect(20, yPos, 440, 70, TFT_CYAN);
     
     display->setTextColor(TFT_WHITE);
     display->setTextDatum(top_left);
@@ -56,24 +56,28 @@ void SettingsScreen::drawSettingsList() {
     display->drawString("Touch Screen", 30, yPos + 10);
     
     display->setTextSize(1);
-    display->setTextColor(TFT_CYAN);
-    display->drawString("Calibrate touch for accurate button presses", 30, yPos + 35);
+    display->setTextColor(TFT_LIGHTGREY);
+    display->drawString("Calibrate touch for accurate button presses", 30, yPos + 40);
     
     calibrateButton.draw(tft);
     
-    // WiFi section (placeholder for tomorrow)
-    yPos = 150;
-    display->fillRect(20, yPos, 440, 80, TFT_DARKGREY);
-    display->drawRect(20, yPos, 440, 80, TFT_WHITE);
-    
-    display->setTextColor(TFT_WHITE);
+    // === WIFI SECTION (PLACEHOLDER) ===
+    yPos = 170;
+
+    // Draw box first
+    display->fillRect(20, yPos, 440, 90, 0x2104);
+    display->drawRect(20, yPos, 440, 90, TFT_DARKGREY);
+
+    // RESET text datum to make sure it's left-aligned
+    display->setTextDatum(top_left);
     display->setTextSize(2);
-    display->drawString("WiFi Upload", 30, yPos + 10);
-    
+    display->setTextColor(TFT_YELLOW);  // Bright color to test visibility
+    display->drawString("WiFi Upload", 40, yPos + 15);  // Move right to x=40
+
     display->setTextSize(1);
-    display->setTextColor(TFT_DARKGREY);  // Grayed out
-    display->drawString("Coming soon: Upload music via WiFi", 30, yPos + 35);
-    display->drawString("SSID: _______________", 30, yPos + 55);
+    display->setTextColor(TFT_CYAN);  // Bright color to test
+    display->drawString("Coming soon: Upload music via WiFi", 40, yPos + 45);
+    display->drawString("SSID: _______________", 40, yPos + 65);
 }
 
 void SettingsScreen::startCalibration() {
