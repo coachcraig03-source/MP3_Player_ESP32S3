@@ -17,7 +17,8 @@ ScreenManager::ScreenManager(TFT_Module& tftRef, VS1053_Module& audio, SD_Module
       splashScreen(nullptr),
       mp3screen(nullptr),
       kidScreen(nullptr),
-      calibrationScreen(nullptr)
+      calibrationScreen(nullptr),
+      settingsScreen(nullptr)
 {
 }
 
@@ -26,6 +27,7 @@ ScreenManager::~ScreenManager() {
     delete mp3screen;
     delete kidScreen;
     delete calibrationScreen;
+        delete settingsScreen;
 }
 
 void ScreenManager::begin() {
@@ -33,7 +35,7 @@ void ScreenManager::begin() {
     splashScreen = new SplashScreen(*this, tft);
     mp3screen = new MP3Screen(*this, tft, sdModule, audioModule);
     kidScreen = new KidScreen(*this, tft, audioModule, sdModule);
-    
+    settingsScreen = new SettingsScreen(*this, tft);     
     // Start with splash screen
     switchTo(splashScreen);
 }
@@ -48,6 +50,10 @@ void ScreenManager::showMP3() {
 
 void ScreenManager::showKids() {
     switchTo(kidScreen);
+}
+
+void ScreenManager::showSettings() {
+    switchTo(settingsScreen);
 }
 
 void ScreenManager::showCalibration() {

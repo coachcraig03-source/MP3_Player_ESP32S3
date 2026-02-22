@@ -211,12 +211,11 @@ void KidScreen::playMP3FromSD() {
 void KidScreen::showAlbum(const char* albumName) {
     extern MP3Player mp3Player;
     mp3Player.stop();
-    delay(200);  // Let everything settle
+    delay(200);
     
     // Reset VS1053 to clear any WMA decoder state
     audioModule.softReset();
     delay(100);
-
 
     strncpy(currentAlbum, albumName, sizeof(currentAlbum) - 1);
     currentAlbum[sizeof(currentAlbum) - 1] = '\0';
@@ -228,10 +227,15 @@ void KidScreen::showAlbum(const char* albumName) {
     
     drawPlaybackScreen();
     
-    // Fuzzy match album folder (case-insensitive, apostrophe-tolerant)
+    // Fuzzy match album folder in /Music (case-insensitive, apostrophe-tolerant)
     extern SdFat sd;
     FsFile root;
-    root.open("/");
+    if (!root.open("/Music")) {  // CHANGED from "/" to "/Music"
+        Serial.println("Failed to open /Music folder");
+        albumLoaded = false;
+        isPlaying = false;
+        return;
+    }
     
     String targetNorm = normalizeAlbumName(albumName);
     bool found = false;
@@ -252,7 +256,7 @@ void KidScreen::showAlbum(const char* albumName) {
             String nameNorm = normalizeAlbumName(name);
             if (nameNorm == targetNorm) {
                 strncpy(actualFolderName, name, sizeof(actualFolderName));
-                strncpy(currentAlbum, name, sizeof(currentAlbum));  // ADD THIS - store actual name
+                strncpy(currentAlbum, name, sizeof(currentAlbum));
                 found = true;
                 dir.close();
                 break;
@@ -280,9 +284,11 @@ void KidScreen::showAlbum(const char* albumName) {
     
     // Use the actual folder name (with correct capitalization and apostrophes)
     char searchPath[128];
-    snprintf(searchPath, sizeof(searchPath), "/%s", actualFolderName);
+    snprintf(searchPath, sizeof(searchPath), "/Music/%s", actualFolderName);  // CHANGED - added /Music
     Serial.printf("Matched to folder: %s\n", actualFolderName);
     
+    // ... rest of code continues with searchPath
+
     // Open the matched folder
     FsFile albumDir;
 
@@ -352,9 +358,9 @@ albumDir.rewind();
     
     // Play first track
     char firstTrack[256];
-    snprintf(firstTrack, sizeof(firstTrack), "%s/%s", searchPath, trackNames[0]);
+    snprintf(firstTrack, sizeof(firstTrack), "%s/%s", searchPath, trackNames[0]);  // searchPath already has /Music/
     Serial.printf("Playing: %s\n", firstTrack);
-    
+
     extern MP3Player mp3Player;
     mp3Player.play(firstTrack);
 }
@@ -450,8 +456,8 @@ void KidScreen::nextTrack() {
     
     // Build path and play
     char trackPath[256];
-    snprintf(trackPath, sizeof(trackPath), "/%s/%s", currentAlbum, trackNames[currentTrack]);
-    
+    snprintf(trackPath, sizeof(trackPath), "/Music/%s/%s", currentAlbum, trackNames[currentTrack]);  // ADD /Music/
+   
     Serial.printf("KidScreen: Next track - %s\n", trackPath);
     
     extern MP3Player mp3Player;
@@ -468,7 +474,7 @@ void KidScreen::prevTrack() {
     
     // Build path and play
     char trackPath[256];
-    snprintf(trackPath, sizeof(trackPath), "/%s/%s", currentAlbum, trackNames[currentTrack]);
+    snprintf(trackPath, sizeof(trackPath), "/Music/%s/%s", currentAlbum, trackNames[currentTrack]);  // ADD /Music/
     
     Serial.printf("KidScreen: Previous track - %s\n", trackPath);
     

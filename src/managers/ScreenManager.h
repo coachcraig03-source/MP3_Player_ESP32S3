@@ -4,6 +4,7 @@
 
 #ifndef SCREEN_MANAGER_H
 #define SCREEN_MANAGER_H
+#include "../screens/SettingsScreen.h"
 
 class TFT_Module;
 class BaseScreen;
@@ -32,6 +33,7 @@ public:
     void showKids();
     void showCalibration();
     void handleSongEnd(); 
+    void showSettings();
     
     // Access to screens (for inter-screen communication)
     KidScreen* getKidScreen() { return kidScreen; }
@@ -42,6 +44,8 @@ public:
 
 private:
     void switchTo(BaseScreen* newScreen);
+    SettingsScreen* settingsScreen;
+
     
     TFT_Module& tft;
     VS1053_Module& audioModule;
