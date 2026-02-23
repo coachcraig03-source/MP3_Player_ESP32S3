@@ -5,6 +5,7 @@
 #ifndef SCREEN_MANAGER_H
 #define SCREEN_MANAGER_H
 #include "../screens/SettingsScreen.h"
+#include "../screens/WriteTagScreen.h"
 
 class TFT_Module;
 class BaseScreen;
@@ -17,7 +18,7 @@ class SD_Module;  // Add this forward declaration
 
 class ScreenManager {
 public:
-    ScreenManager(TFT_Module& tft, VS1053_Module& audio, SD_Module& sd);
+    ScreenManager(TFT_Module& tft, VS1053_Module& audio, SD_Module& sd, RC522_Module& nfc);
     ~ScreenManager();
 
     void begin();
@@ -34,6 +35,7 @@ public:
     void showCalibration();
     void handleSongEnd(); 
     void showSettings();
+    void showWriteTag();
     
     // Access to screens (for inter-screen communication)
     KidScreen* getKidScreen() { return kidScreen; }
@@ -45,11 +47,13 @@ public:
 private:
     void switchTo(BaseScreen* newScreen);
     SettingsScreen* settingsScreen;
+    WriteTagScreen* writeTagScreen;
 
     
     TFT_Module& tft;
     VS1053_Module& audioModule;
-    SD_Module& sdModule;  // Add this
+    SD_Module& sdModule; 
+    RC522_Module& nfcModule;
     
     BaseScreen* currentScreen;
     SplashScreen* splashScreen;

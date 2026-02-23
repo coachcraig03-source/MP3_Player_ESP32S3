@@ -9,16 +9,18 @@
 #include "../screens/CalibrationScreen.h"
 #include "../utils/TouchCalibration.h"
 
-ScreenManager::ScreenManager(TFT_Module& tftRef, VS1053_Module& audio, SD_Module& sd)
+ScreenManager::ScreenManager(TFT_Module& tftRef, VS1053_Module& audio, SD_Module& sd, RC522_Module& nfc)
     : tft(tftRef),
       audioModule(audio),
       sdModule(sd),
+      nfcModule(nfc),  // ADD THIS LINE
       currentScreen(nullptr),
       splashScreen(nullptr),
       mp3screen(nullptr),
       kidScreen(nullptr),
       calibrationScreen(nullptr),
-      settingsScreen(nullptr)
+      settingsScreen(nullptr),
+      writeTagScreen(nullptr)
 {
 }
 
@@ -27,7 +29,8 @@ ScreenManager::~ScreenManager() {
     delete mp3screen;
     delete kidScreen;
     delete calibrationScreen;
-        delete settingsScreen;
+    delete settingsScreen;
+    delete writeTagScreen;  // ADD THIS
 }
 
 void ScreenManager::begin() {
@@ -35,9 +38,14 @@ void ScreenManager::begin() {
     splashScreen = new SplashScreen(*this, tft);
     mp3screen = new MP3Screen(*this, tft, sdModule, audioModule);
     kidScreen = new KidScreen(*this, tft, audioModule, sdModule);
-    settingsScreen = new SettingsScreen(*this, tft);     
+    settingsScreen = new SettingsScreen(*this, tft);  
+    writeTagScreen = new WriteTagScreen(*this, tft, sdModule, nfcModule);    
     // Start with splash screen
     switchTo(splashScreen);
+}
+
+void ScreenManager::showWriteTag() {
+    switchTo(writeTagScreen);
 }
 
 void ScreenManager::showSplash() {

@@ -198,3 +198,44 @@ void RC522_Module::runTest(int count) {
     delay(500);
   }
 }
+
+bool RC522_Module::writeAlbumTag(const char* albumName) {
+    // Format NDEF text message
+    uint8_t message[48] = {0};
+    
+    // NDEF header
+    message[0] = 0x03;  // NDEF message start
+    message[1] = strlen(albumName) + 7;  // Payload length
+    message[2] = 0xD1;  // Record header
+    message[3] = 0x01;  // Type length
+    message[4] = strlen(albumName) + 3;  // Payload length
+    message[5] = 0x54;  // 'T' = Text record
+    message[7] = 0x02;  // Language code length
+    message[8] = 'e';   // 'e'
+    message[9] = 'n';   // 'n'
+
+    // Copy album name starting at position 10
+    strcpy((char*)&message[9], albumName);
+
+    // NDEF terminator
+    message[10 + strlen(albumName)] = 0xFE;
+    
+    // Write to tag (pages 4-15)
+    for (int page = 4; page < 16; page++) {
+        uint8_t block[16];
+        memcpy(block, &message[(page-4)*4], 4);
+        
+        // Pad rest of block
+        for (int i = 4; i < 16; i++) {
+            block[i] = 0;
+        }
+        
+        byte status = rfid.MIFARE_Ultralight_Write(page, block, 16);
+        if (status != MFRC522::STATUS_OK) {
+            Serial.printf("Write failed at page %d\n", page);
+            return false;
+        }
+    }
+    
+    return true;
+}

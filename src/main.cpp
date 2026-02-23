@@ -22,7 +22,7 @@ FT6236 touchScreen;
 MP3Player mp3Player(sdModule, audioModule);
 
 // Screen management
-ScreenManager screenManager(tftModule, audioModule, sdModule);
+ScreenManager screenManager(tftModule, audioModule, sdModule, nfcModule); 
 
 // Touch interrupt
 volatile bool touchDetected = false;
@@ -60,7 +60,7 @@ void setupWiFi() {
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
     
     int attempts = 0;
-    while (WiFi.status() != WL_CONNECTED && attempts < 20) {
+    while (WiFi.status() != WL_CONNECTED && attempts < 40) {
         delay(600);
         Serial.print(".");
         if (attempts % 5 == 0) {

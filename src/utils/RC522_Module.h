@@ -16,6 +16,7 @@ class RC522_Module {
 public:
   // Constructor
   RC522_Module(uint8_t cs, uint8_t rst);
+  bool writeAlbumTag(const char* albumName);
   
   // Initialize the RC522
   void begin();

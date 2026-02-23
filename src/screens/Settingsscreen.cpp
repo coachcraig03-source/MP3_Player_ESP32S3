@@ -13,10 +13,12 @@ SettingsScreen::SettingsScreen(ScreenManager& manager, TFT_Module& tftModule)
     : BaseScreen(manager, tftModule),
       backButton(10, 10, 80, 40, "Back"),
       calibrateButton(300, 80, 140, 50, "Calibrate"),
+      writeTagButton(300, 170, 140, 50, "Write Tag"), 
       saveButton(160, 260, 160, 50, "Save Settings")
 {
     backButton.setColors(TFT_DARKGREY, TFT_WHITE, TFT_WHITE);
     calibrateButton.setColors(0x07E0, TFT_WHITE, TFT_BLACK);  // Green
+    writeTagButton.setColors(TFT_BLUE, TFT_WHITE, TFT_WHITE);  
     saveButton.setColors(TFT_BLUE, TFT_WHITE, TFT_WHITE);
 }
 
@@ -47,7 +49,7 @@ void SettingsScreen::drawSettingsList() {
     int yPos = 80;
     
     // Touch Calibration section
-    display->fillRect(20, yPos, 440, 70, 0x2104);  // Dark gray
+    display->fillRect(20, yPos, 440, 70, 0x2104);
     display->drawRect(20, yPos, 440, 70, TFT_CYAN);
     
     display->setTextColor(TFT_WHITE);
@@ -61,23 +63,35 @@ void SettingsScreen::drawSettingsList() {
     
     calibrateButton.draw(tft);
     
-    // === WIFI SECTION (PLACEHOLDER) ===
+    // === NFC TAG WRITING SECTION ===
     yPos = 170;
-
-    // Draw box first
-    display->fillRect(20, yPos, 440, 90, 0x2104);
-    display->drawRect(20, yPos, 440, 90, TFT_DARKGREY);
-
-    // RESET text datum to make sure it's left-aligned
+    display->fillRect(20, yPos, 440, 70, 0x2104);
+    display->drawRect(20, yPos, 440, 70, TFT_CYAN);
+    
     display->setTextDatum(top_left);
     display->setTextSize(2);
-    display->setTextColor(TFT_YELLOW);  // Bright color to test visibility
-    display->drawString("WiFi Upload", 40, yPos + 15);  // Move right to x=40
-
+    display->setTextColor(TFT_WHITE);
+    display->drawString("NFC Tag Writing", 30, yPos + 10);
+    
     display->setTextSize(1);
-    display->setTextColor(TFT_CYAN);  // Bright color to test
-    display->drawString("Coming soon: Upload music via WiFi", 40, yPos + 45);
-    display->drawString("SSID: _______________", 40, yPos + 65);
+    display->setTextColor(TFT_LIGHTGREY);
+    display->drawString("Write album names to blank NFC tags", 30, yPos + 40);
+    
+    writeTagButton.draw(tft);
+    
+    // === WIFI SECTION (PLACEHOLDER) ===
+    yPos = 260;
+    display->fillRect(20, yPos, 440, 70, 0x2104);
+    display->drawRect(20, yPos, 440, 70, TFT_DARKGREY);
+    
+    display->setTextDatum(top_left);
+    display->setTextSize(2);
+    display->setTextColor(TFT_DARKGREY);  // Grayed out
+    display->drawString("WiFi Upload", 30, yPos + 10);
+    
+    display->setTextSize(1);
+    display->setTextColor(0x528A);  // Darker gray
+    display->drawString("Coming soon: Upload music via WiFi", 30, yPos + 40);
 }
 
 void SettingsScreen::startCalibration() {
@@ -101,6 +115,14 @@ void SettingsScreen::handleTouch(int x, int y) {
         startCalibration();
         return;
     }
+
+      
+    if (writeTagButton.hit(x, y)) {  // ADD THIS
+        Serial.println("Write Tag button pressed");
+        screenManager.showWriteTag();
+        return;
+    }
+    
     
     // Future: Handle WiFi settings, save button, etc.
 }

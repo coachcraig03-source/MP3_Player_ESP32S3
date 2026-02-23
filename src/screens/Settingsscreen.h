@@ -25,6 +25,7 @@ private:
     
     UIButton backButton;
     UIButton calibrateButton;
+    UIButton writeTagButton; 
     UIButton saveButton;
 };
 
