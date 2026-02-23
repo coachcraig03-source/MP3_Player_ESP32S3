@@ -291,18 +291,16 @@ cppwhile (sent < len) {
 void VS1053_Module::sendMP3Data(uint8_t* data, size_t len) {
     size_t sent = 0;
     while (sent < len) {
-        // Wait for DREQ with aggressive watchdog feeding
-        int timeout = 10000;  // Timeout after ~100ms
-        while (!digitalRead(_dreq) && timeout-- > 0) {
-            delayMicroseconds(10);
-            if (timeout % 10 == 0) {  // Yield every 100us instead of every 1ms
-                vTaskDelay(0);
+        // Wait for DREQ - yield EVERY iteration
+        unsigned long startWait = millis();
+        while (!digitalRead(_dreq)) {
+            vTaskDelay(1);  // Yield every loop (1ms)
+            
+            // Timeout after 100ms
+            if (millis() - startWait > 100) {
+                Serial.println("VS1053: DREQ timeout");
+                return;
             }
-        }
-        
-        if (timeout == 0) {
-            Serial.println("VS1053: DREQ timeout, skipping chunk");
-            return;  // Skip this chunk
         }
         
         // Send up to 32 bytes

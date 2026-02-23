@@ -15,7 +15,7 @@
 
 #define LIST_X 220
 #define LIST_Y 60
-#define LIST_W 200
+#define LIST_W 180
 #define LIST_H 200
 #define ITEM_HEIGHT 18
 #define MAX_VISIBLE 10
@@ -251,12 +251,19 @@ void MP3Screen::drawAlbumArt() {
         return;
     }
     
-    // Find folder.jpg in selected album
+    // Try folder-specific art first
     char artPath[128];
-    snprintf(artPath, sizeof(artPath), "/Music/%s/folder.jpg", albumNames[selectedAlbum]);  // ADD /Music/
+    snprintf(artPath, sizeof(artPath), "/Music/%s/folder.jpg", albumNames[selectedAlbum]);
     
     if (!sdModule.openFile(artPath)) {
-        return;  // No art found
+        // Try default art
+        Serial.println("No album art found - trying default");
+        strcpy(artPath, "/Music/FolderDefault.jpg");
+        
+        if (!sdModule.openFile(artPath)) {
+            Serial.println("No default art found either");
+            return;  // No art at all
+        }
     }
     
     // Read JPEG
@@ -276,10 +283,6 @@ void MP3Screen::drawAlbumArt() {
         TJpgDec.setSwapBytes(true);
         globalTFT_MP3 = &tft;
         
-        // Draw at 10,60 (200x200 box)
-        // Right before TJpgDec.drawJpg():
-        globalTFT_MP3 = &tft;  // Make SURE this is set
-
         TJpgDec.drawJpg(10, 60, buffer, totalRead);
         
         globalTFT_MP3 = nullptr;
@@ -366,7 +369,13 @@ void MP3Screen::selectTrack(int index) {
     selectedTrack = index;
     Serial.printf("MP3Screen: Selected track '%s'\n", trackNames[index]);
     
-    // TODO: Start playback
+    // Actually play the track!
+    extern MP3Player mp3Player;
+    mp3Player.stop();
+    delay(50);
+    
+    playTrack(index);
+    drawLayout();  // Refresh to show selection
 }
 
 void MP3Screen::scrollList(int direction) {
@@ -438,25 +447,7 @@ void MP3Screen::handleTouch(int x, int y) {
         return;
     }
     
-    // Playback controls
-    if (prevButton.hit(x, y)) {
-        Serial.println("Previous track");
-        // TODO: Previous
-        return;
-    }
-    if (playPauseButton.hit(x, y)) {
-        isPlaying = !isPlaying;
-        playPauseButton.setLabel(isPlaying ? "Pause" : "Play");
-        playPauseButton.draw(tft);
-        Serial.println(isPlaying ? "Playing" : "Paused");
-        return;
-    }
-    if (nextButton.hit(x, y)) {
-        Serial.println("Next track");
-        // TODO: Next
-        return;
-    }
-    
+  
     // List area
     if (x >= LIST_X && x < LIST_X + LIST_W && y >= LIST_Y && y < LIST_Y + LIST_H) {
         int relativeY = y - LIST_Y - 5;

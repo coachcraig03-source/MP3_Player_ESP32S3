@@ -26,6 +26,8 @@ ScreenManager screenManager(tftModule, audioModule, sdModule);
 
 // Touch interrupt
 volatile bool touchDetected = false;
+// Time
+bool timeValid = false;
 
 // Task handle
 TaskHandle_t mp3TaskHandle = NULL;
@@ -39,29 +41,70 @@ const char* NTP_SERVER = "pool.ntp.org";
 const long GMT_OFFSET_SEC = -28800;  // PST = UTC-8 hours
 const int DAYLIGHT_OFFSET_SEC = 3600;  // DST adjustment
 
+bool getFormattedTime(char* buffer, size_t bufferSize) {
+    if (!timeValid) return false;
+    
+    struct tm timeinfo;
+    if (!getLocalTime(&timeinfo)) return false;
+    
+    strftime(buffer, bufferSize, "%a %b %d, %I:%M %p", &timeinfo);  // "Sun Feb 22, 12:04 PM"
+    return true;
+}
+
 void setupWiFi() {
     Serial.println("\n=== Connecting to WiFi ===");
+    Serial.printf("SSID: %s\n", WIFI_SSID);
+    Serial.printf("Free heap: %d bytes\n", ESP.getFreeHeap());
+    
     WiFi.mode(WIFI_STA);
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
     
     int attempts = 0;
     while (WiFi.status() != WL_CONNECTED && attempts < 20) {
-        delay(500);
+        delay(600);
         Serial.print(".");
+        if (attempts % 5 == 0) {
+            Serial.printf(" [%d] ", WiFi.status());
+        }
         attempts++;
     }
     
     if (WiFi.status() == WL_CONNECTED) {
-        Serial.println("\nWiFi connected!");
+        Serial.println("\n✓ WiFi Connected!");
         Serial.printf("IP: %s\n", WiFi.localIP().toString().c_str());
         
-        // Configure time
-        configTime(GMT_OFFSET_SEC, DAYLIGHT_OFFSET_SEC, NTP_SERVER);
-        Serial.println("Time configured from NTP");
+        // ADD THIS SECTION:
+        // Get time from NTP
+        Serial.println("Syncing time from NTP...");
+        configTime(-28800, 3600, "pool.ntp.org");
+        
+        int timeouts = 0;
+        while (time(nullptr) < 100000 && timeouts < 40) {
+            delay(500);
+            Serial.print(".");
+            timeouts++;
+        }
+        
+        struct tm timeinfo;
+        if (getLocalTime(&timeinfo)) {
+            char timeStr[64];
+            strftime(timeStr, sizeof(timeStr), "%A, %B %d %Y %H:%M:%S", &timeinfo);
+            Serial.printf("\n✓ Time: %s\n", timeStr);
+            if (getLocalTime(&timeinfo)) {
+              char timeStr[64];
+              strftime(timeStr, sizeof(timeStr), "%A, %B %d %Y %H:%M:%S", &timeinfo);
+              Serial.printf("\n✓ Time: %s\n", timeStr);
+              timeValid = true;  // ADD THIS
+            }
+        }
+        
     } else {
-        Serial.println("\nWiFi connection failed");
+        Serial.println("\n✗ WiFi connection failed");
+        Serial.printf("Final status: %d\n", WiFi.status());
+        Serial.println("(0=IDLE, 1=NO_SSID, 3=CONNECTED, 4=FAILED, 6=DISCONNECTED)");
     }
-}
+}  // <- Only one closing brace for the function
+
 
 // Task function running on Core 0
 void mp3StreamTask(void* parameter) {
@@ -83,10 +126,10 @@ void setup() {
   
   Serial.println("\n=== NFC MP3 Player Starting ===\n");
 
-  //  Serial.printf("Free heap before WiFi: %d bytes\n", ESP.getFreeHeap());
+    Serial.printf("Free heap before WiFi: %d bytes\n", ESP.getFreeHeap());
   // Connect to WiFi
-  //setupWiFi();
- // Serial.printf("Free heap after WiFi: %d bytes\n", ESP.getFreeHeap());
+  setupWiFi();
+  Serial.printf("Free heap after WiFi: %d bytes\n", ESP.getFreeHeap());
   
   // Hard reset RC522 first (before any SPI init)
   pinMode(NFC_RST, OUTPUT);

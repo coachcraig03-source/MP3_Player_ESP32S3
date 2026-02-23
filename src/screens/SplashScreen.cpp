@@ -31,6 +31,21 @@ void SplashScreen::begin() {
     display->setTextSize(2);
     display->setTextColor(TFT_CYAN);
     display->drawString("Select Mode", 240, 90);
+
+        
+    // Time display (bottom of screen)
+    extern bool timeValid;
+    if (timeValid) {
+        char timeStr[64];
+        struct tm timeinfo;
+        if (getLocalTime(&timeinfo)) {
+            strftime(timeStr, sizeof(timeStr), "%a %b %d, %I:%M %p", &timeinfo);
+            display->setTextSize(1);
+            display->setTextColor(TFT_LIGHTGREY);
+            display->setTextDatum(bottom_center);
+            display->drawString(timeStr, 240, 310);  // Bottom center
+        }
+    }
     
     // Draw mode buttons
     kidsButton.draw(tft);
@@ -55,7 +70,29 @@ void SplashScreen::drawGearIcon(int centerX, int centerY, int radius) {
 }
 
 void SplashScreen::update() {
-    // No animation needed
+    static unsigned long lastUpdate = 0;
+    
+    if (millis() - lastUpdate > 60000) {  // Update every minute
+        lastUpdate = millis();
+        
+        extern bool timeValid;
+        if (timeValid) {
+            auto display = tft.getTFT();
+            char timeStr[64];
+            struct tm timeinfo;
+            if (getLocalTime(&timeinfo)) {
+                // Clear old time
+                display->fillRect(140, 295, 200, 20, TFT_BLACK);
+                
+                // Draw new time
+                strftime(timeStr, sizeof(timeStr), "%a %b %d, %I:%M %p", &timeinfo);
+                display->setTextSize(1);
+                display->setTextColor(TFT_LIGHTGREY);
+                display->setTextDatum(bottom_center);
+                display->drawString(timeStr, 240, 310);
+            }
+        }
+    }
 }
 
 void SplashScreen::handleTouch(int x, int y) {

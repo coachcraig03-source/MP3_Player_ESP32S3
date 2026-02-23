@@ -394,10 +394,17 @@ void KidScreen::displayAlbumArt() {
     // Find album art in the current album folder
     char artPath[128];
     if (!sdModule.getAlbumArt(albumPath, artPath, sizeof(artPath))) {
-        Serial.println("No album art found");
-        return;
+        Serial.println("No album art found - trying default");
+        
+        // Try default album art
+        strcpy(artPath, "/Music/FolderDefault.jpg");
+        
+        if (!sdModule.openFile(artPath)) {
+            Serial.println("No default art found either");
+            return;  // No art at all
+        }
     }
-
+    
     
     // Set up TJpg_Decoder
     TJpgDec.setJpgScale(1);  // 1:1 scale
