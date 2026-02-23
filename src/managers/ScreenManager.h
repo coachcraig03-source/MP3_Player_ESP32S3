@@ -6,6 +6,7 @@
 #define SCREEN_MANAGER_H
 #include "../screens/SettingsScreen.h"
 #include "../screens/WriteTagScreen.h"
+#include "../screens/WebUploadScreen.h"
 
 class TFT_Module;
 class BaseScreen;
@@ -36,6 +37,7 @@ public:
     void handleSongEnd(); 
     void showSettings();
     void showWriteTag();
+    void showWebUpload();
     
     // Access to screens (for inter-screen communication)
     KidScreen* getKidScreen() { return kidScreen; }
@@ -48,6 +50,7 @@ private:
     void switchTo(BaseScreen* newScreen);
     SettingsScreen* settingsScreen;
     WriteTagScreen* writeTagScreen;
+    WebUploadScreen* webUploadScreen;
 
     
     TFT_Module& tft;

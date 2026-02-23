@@ -21,6 +21,8 @@ SD_Module sdModule(SD_CS);
 FT6236 touchScreen;
 MP3Player mp3Player(sdModule, audioModule);
 
+SdFat sd;  // ADD THIS - global SD object for web server
+
 // Screen management
 ScreenManager screenManager(tftModule, audioModule, sdModule, nfcModule); 
 
@@ -33,8 +35,8 @@ bool timeValid = false;
 TaskHandle_t mp3TaskHandle = NULL;
 
 // WiFi credentials (hard-coded for now)
-const char* WIFI_SSID = "Galactia_Guest";
-const char* WIFI_PASSWORD = "SantaClaus1993";
+const char* WIFI_SSID = "Galactia";
+const char* WIFI_PASSWORD = "J%smine1993";
 
 // NTP server
 const char* NTP_SERVER = "pool.ntp.org";
@@ -56,6 +58,7 @@ void setupWiFi() {
     Serial.printf("SSID: %s\n", WIFI_SSID);
     Serial.printf("Free heap: %d bytes\n", ESP.getFreeHeap());
     
+    delay(2000);  // 2 second settle time
     WiFi.mode(WIFI_STA);
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
     

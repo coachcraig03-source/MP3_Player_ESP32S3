@@ -14,12 +14,14 @@ SettingsScreen::SettingsScreen(ScreenManager& manager, TFT_Module& tftModule)
       backButton(10, 10, 80, 40, "Back"),
       calibrateButton(300, 80, 140, 50, "Calibrate"),
       writeTagButton(300, 170, 140, 50, "Write Tag"), 
-      saveButton(160, 260, 160, 50, "Save Settings")
+      saveButton(160, 260, 160, 50, "Save Settings"),
+      webUploadButton(300, 260, 140, 50, "Web Upload")  // ADD THIS
 {
     backButton.setColors(TFT_DARKGREY, TFT_WHITE, TFT_WHITE);
     calibrateButton.setColors(0x07E0, TFT_WHITE, TFT_BLACK);  // Green
     writeTagButton.setColors(TFT_BLUE, TFT_WHITE, TFT_WHITE);  
     saveButton.setColors(TFT_BLUE, TFT_WHITE, TFT_WHITE);
+    webUploadButton.setColors(TFT_BLUE, TFT_WHITE, TFT_WHITE);
 }
 
 void SettingsScreen::begin() {
@@ -79,20 +81,23 @@ void SettingsScreen::drawSettingsList() {
     
     writeTagButton.draw(tft);
     
-    // === WIFI SECTION (PLACEHOLDER) ===
+    // === WEB UPLOAD SECTION ===
     yPos = 260;
     display->fillRect(20, yPos, 440, 70, 0x2104);
-    display->drawRect(20, yPos, 440, 70, TFT_DARKGREY);
-    
+    display->drawRect(20, yPos, 440, 70, TFT_CYAN);
+
     display->setTextDatum(top_left);
     display->setTextSize(2);
-    display->setTextColor(TFT_DARKGREY);  // Grayed out
-    display->drawString("WiFi Upload", 30, yPos + 10);
-    
+    display->setTextColor(TFT_WHITE);
+    display->drawString("WEB Upload", 30, yPos + 10);
+
     display->setTextSize(1);
-    display->setTextColor(0x528A);  // Darker gray
-    display->drawString("Coming soon: Upload music via WiFi", 30, yPos + 40);
-}
+    display->setTextColor(TFT_LIGHTGREY);
+    display->drawString("Upload music files via WEB", 30, yPos + 40);
+
+
+    webUploadButton.draw(tft);  // Change ftpButton to webUploadButton
+    }
 
 void SettingsScreen::startCalibration() {
     Serial.println("Starting touch calibration...");
@@ -122,6 +127,12 @@ void SettingsScreen::handleTouch(int x, int y) {
         screenManager.showWriteTag();
         return;
     }
+
+    if (webUploadButton.hit(x, y)) {
+        Serial.println("Web Upload button pressed");
+        screenManager.showWebUpload();
+    return;
+}
     
     
     // Future: Handle WiFi settings, save button, etc.

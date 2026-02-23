@@ -20,7 +20,8 @@ ScreenManager::ScreenManager(TFT_Module& tftRef, VS1053_Module& audio, SD_Module
       kidScreen(nullptr),
       calibrationScreen(nullptr),
       settingsScreen(nullptr),
-      writeTagScreen(nullptr)
+      writeTagScreen(nullptr),
+      webUploadScreen(nullptr)  // ADD THIS
 {
 }
 
@@ -30,7 +31,8 @@ ScreenManager::~ScreenManager() {
     delete kidScreen;
     delete calibrationScreen;
     delete settingsScreen;
-    delete writeTagScreen;  // ADD THIS
+    delete writeTagScreen;  
+    delete webUploadScreen;  
 }
 
 void ScreenManager::begin() {
@@ -39,9 +41,14 @@ void ScreenManager::begin() {
     mp3screen = new MP3Screen(*this, tft, sdModule, audioModule);
     kidScreen = new KidScreen(*this, tft, audioModule, sdModule);
     settingsScreen = new SettingsScreen(*this, tft);  
-    writeTagScreen = new WriteTagScreen(*this, tft, sdModule, nfcModule);    
+    writeTagScreen = new WriteTagScreen(*this, tft, sdModule, nfcModule);   
+    webUploadScreen = new WebUploadScreen(*this, tft, sdModule);      
     // Start with splash screen
     switchTo(splashScreen);
+}
+
+void ScreenManager::showWebUpload() {
+    switchTo(webUploadScreen);
 }
 
 void ScreenManager::showWriteTag() {

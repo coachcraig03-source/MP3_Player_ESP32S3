@@ -27,6 +27,7 @@ private:
     UIButton calibrateButton;
     UIButton writeTagButton; 
     UIButton saveButton;
+    UIButton webUploadButton;  
 };
 
 #endif // SETTINGS_SCREEN_H
