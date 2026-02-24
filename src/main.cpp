@@ -12,6 +12,7 @@
 #include "managers/MP3Player.h"
 #include <WiFi.h>
 #include <time.h>
+#include "utils/Settings.h"
 
 // Hardware modules
 RC522_Module nfcModule(NFC_CS, NFC_RST);
@@ -35,8 +36,8 @@ bool timeValid = false;
 TaskHandle_t mp3TaskHandle = NULL;
 
 // WiFi credentials (hard-coded for now)
-const char* WIFI_SSID = "Galactia";
-const char* WIFI_PASSWORD = "J%smine1993";
+//const char* WIFI_SSID = "SSID";
+//const char* WIFI_PASSWORD = "password";
 
 // NTP server
 const char* NTP_SERVER = "pool.ntp.org";
@@ -55,15 +56,25 @@ bool getFormattedTime(char* buffer, size_t bufferSize) {
 
 void setupWiFi() {
     Serial.println("\n=== Connecting to WiFi ===");
-    Serial.printf("SSID: %s\n", WIFI_SSID);
+    
+    // Get settings
+    Settings& settings = Settings::getInstance();
+    
+    if (settings.wifi_ssid.length() == 0) {
+        Serial.println("No WiFi credentials in settings, skipping WiFi");
+        return;
+    }
+    
+    Serial.printf("SSID: %s\n", settings.wifi_ssid.c_str());
     Serial.printf("Free heap: %d bytes\n", ESP.getFreeHeap());
     
-    delay(2000);  // 2 second settle time
+    delay(2000);  // Hardware settle time
+    
     WiFi.mode(WIFI_STA);
-    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+    WiFi.begin(settings.wifi_ssid.c_str(), settings.wifi_password.c_str());
     
     int attempts = 0;
-    while (WiFi.status() != WL_CONNECTED && attempts < 40) {
+    while (WiFi.status() != WL_CONNECTED && attempts < settings.wifi_timeout) {
         delay(600);
         Serial.print(".");
         if (attempts % 5 == 0) {
@@ -76,10 +87,9 @@ void setupWiFi() {
         Serial.println("\n✓ WiFi Connected!");
         Serial.printf("IP: %s\n", WiFi.localIP().toString().c_str());
         
-        // ADD THIS SECTION:
         // Get time from NTP
         Serial.println("Syncing time from NTP...");
-        configTime(-28800, 3600, "pool.ntp.org");
+        configTime(settings.ntp_offset, settings.ntp_daylight, "pool.ntp.org");
         
         int timeouts = 0;
         while (time(nullptr) < 100000 && timeouts < 40) {
@@ -93,20 +103,14 @@ void setupWiFi() {
             char timeStr[64];
             strftime(timeStr, sizeof(timeStr), "%A, %B %d %Y %H:%M:%S", &timeinfo);
             Serial.printf("\n✓ Time: %s\n", timeStr);
-            if (getLocalTime(&timeinfo)) {
-              char timeStr[64];
-              strftime(timeStr, sizeof(timeStr), "%A, %B %d %Y %H:%M:%S", &timeinfo);
-              Serial.printf("\n✓ Time: %s\n", timeStr);
-              timeValid = true;  // ADD THIS
-            }
+            timeValid = true;
         }
         
     } else {
         Serial.println("\n✗ WiFi connection failed");
         Serial.printf("Final status: %d\n", WiFi.status());
-        Serial.println("(0=IDLE, 1=NO_SSID, 3=CONNECTED, 4=FAILED, 6=DISCONNECTED)");
     }
-}  // <- Only one closing brace for the function
+}
 
 
 // Task function running on Core 0
@@ -129,10 +133,7 @@ void setup() {
   
   Serial.println("\n=== NFC MP3 Player Starting ===\n");
 
-    Serial.printf("Free heap before WiFi: %d bytes\n", ESP.getFreeHeap());
-  // Connect to WiFi
-  setupWiFi();
-  Serial.printf("Free heap after WiFi: %d bytes\n", ESP.getFreeHeap());
+
   
   // Hard reset RC522 first (before any SPI init)
   pinMode(NFC_RST, OUTPUT);
@@ -182,7 +183,14 @@ void setup() {
   }
   delay(100);
 
+    // Load settings AFTER SD card init
+    Settings& settings = Settings::getInstance();
+    settings.load();
 
+    Serial.printf("Free heap before WiFi: %d bytes\n", ESP.getFreeHeap());
+    // Connect to WiFi
+    setupWiFi();
+    Serial.printf("Free heap after WiFi: %d bytes\n", ESP.getFreeHeap());
 
   // Create MP3 streaming task on Core 0 (AFTER SD init, BEFORE TFT)
   Serial.println("\nCreating MP3 streaming task on Core 0...");

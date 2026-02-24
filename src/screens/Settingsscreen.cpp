@@ -15,13 +15,13 @@ SettingsScreen::SettingsScreen(ScreenManager& manager, TFT_Module& tftModule)
       calibrateButton(300, 80, 140, 50, "Calibrate"),
       writeTagButton(300, 170, 140, 50, "Write Tag"), 
       saveButton(160, 260, 160, 50, "Save Settings"),
-      webUploadButton(300, 260, 140, 50, "Web Upload")  // ADD THIS
+      ftpUploadButton(300, 260, 140, 50,"FTP Upload")  // ADD THIS
 {
     backButton.setColors(TFT_DARKGREY, TFT_WHITE, TFT_WHITE);
     calibrateButton.setColors(0x07E0, TFT_WHITE, TFT_BLACK);  // Green
     writeTagButton.setColors(TFT_BLUE, TFT_WHITE, TFT_WHITE);  
     saveButton.setColors(TFT_BLUE, TFT_WHITE, TFT_WHITE);
-    webUploadButton.setColors(TFT_BLUE, TFT_WHITE, TFT_WHITE);
+    ftpUploadButton.setColors(TFT_BLUE, TFT_WHITE, TFT_WHITE);
 }
 
 void SettingsScreen::begin() {
@@ -81,7 +81,7 @@ void SettingsScreen::drawSettingsList() {
     
     writeTagButton.draw(tft);
     
-    // === WEB UPLOAD SECTION ===
+    // === FTP UPLOAD SECTION ===
     yPos = 260;
     display->fillRect(20, yPos, 440, 70, 0x2104);
     display->drawRect(20, yPos, 440, 70, TFT_CYAN);
@@ -89,14 +89,14 @@ void SettingsScreen::drawSettingsList() {
     display->setTextDatum(top_left);
     display->setTextSize(2);
     display->setTextColor(TFT_WHITE);
-    display->drawString("WEB Upload", 30, yPos + 10);
+    display->drawString("FTP Upload", 30, yPos + 10);
 
     display->setTextSize(1);
     display->setTextColor(TFT_LIGHTGREY);
-    display->drawString("Upload music files via WEB", 30, yPos + 40);
+    display->drawString("Upload music files via FTP", 30, yPos + 40);
 
 
-    webUploadButton.draw(tft);  // Change ftpButton to webUploadButton
+    ftpUploadButton.draw(tft);  // Change ftpButton to FTPUploadButton
     }
 
 void SettingsScreen::startCalibration() {
@@ -128,9 +128,9 @@ void SettingsScreen::handleTouch(int x, int y) {
         return;
     }
 
-    if (webUploadButton.hit(x, y)) {
-        Serial.println("Web Upload button pressed");
-        screenManager.showWebUpload();
+    if (ftpUploadButton.hit(x, y)) {
+        Serial.println("FTP Upload button pressed");
+        screenManager.showFTPUpload();
     return;
 }
     

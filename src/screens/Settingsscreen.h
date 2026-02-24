@@ -28,6 +28,7 @@ private:
     UIButton writeTagButton; 
     UIButton saveButton;
     UIButton webUploadButton;  
+    UIButton ftpUploadButton;  // ADD THIS (lowercase!)
 };
 
 #endif // SETTINGS_SCREEN_H
