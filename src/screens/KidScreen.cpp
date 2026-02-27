@@ -179,15 +179,23 @@ void KidScreen::handleTouch(int x, int y) {
             // TODO: Implement previous track
         }
         else if (playPauseButton.hit(x, y)) {
+            extern MP3Player mp3Player;
+            
             isPlaying = !isPlaying;
             Serial.println(isPlaying ? "Playing" : "Paused");
-            playPauseButton.setLabel(isPlaying ? "||" : ">");
             
-            if (!isPlaying) {
-                audioModule.stopPlayback();
+            if (isPlaying) {
+                // Resume playback
+                mp3Player.resume();  // If you have a resume function
+                playPauseButton.setLabel("||");
+            } else {
+                // Pause playback
+                mp3Player.pause();  // Or mp3Player.stop() if no pause function
+                playPauseButton.setLabel(">");
             }
             
-            begin();  // Redraw to update button
+            // Just redraw the button, not the whole screen
+            playPauseButton.draw(tft);
         }
         else if (nextButton.hit(x, y)) {
             Serial.println("Next track");
@@ -389,8 +397,8 @@ void KidScreen::displayAlbumArt() {
     Serial.println("=== DISPLAY ALBUM ART CALLED ===");
     
    // Use currentAlbum instead of searching for first MP3
-    snprintf(albumPath, sizeof(albumPath), "/%s", currentAlbum);
-    
+     snprintf(albumPath, sizeof(albumPath), "/Music/%s", currentAlbum);  // ADD /Music/
+   
     // Find album art in the current album folder
     char artPath[128];
     if (!sdModule.getAlbumArt(albumPath, artPath, sizeof(artPath))) {

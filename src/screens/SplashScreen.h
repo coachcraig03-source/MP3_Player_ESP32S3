@@ -20,6 +20,7 @@ public:
     void handleTouch(int x, int y) override;
 
 private:
+    UIButton bluetoothButton;  // Add this
     void drawGearIcon(int centerX, int centerY, int radius);
     
     UIButton kidsButton;

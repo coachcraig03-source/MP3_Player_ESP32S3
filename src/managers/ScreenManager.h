@@ -7,6 +7,7 @@
 #include "../screens/SettingsScreen.h"
 #include "../screens/WriteTagScreen.h"
 #include "../screens/FTPUploadScreen.h"
+#include "../screens/BluetoothScreen.h"
 
 class TFT_Module;
 class BaseScreen;
@@ -19,6 +20,7 @@ class SD_Module;  // Add this forward declaration
 
 class ScreenManager {
 public:
+    void showBluetooth();
     ScreenManager(TFT_Module& tft, VS1053_Module& audio, SD_Module& sd, RC522_Module& nfc);
     ~ScreenManager();
 
@@ -46,7 +48,9 @@ public:
     // Get TFT reference for screens
     TFT_Module& getTFT() { return tft; }
 
+
 private:
+    BluetoothScreen* bluetoothScreen;
     void switchTo(BaseScreen* newScreen);
     SettingsScreen* settingsScreen;
     WriteTagScreen* writeTagScreen;

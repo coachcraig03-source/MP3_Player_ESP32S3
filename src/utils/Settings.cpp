@@ -49,6 +49,7 @@ bool Settings::load() {
     return true;
 }
 
+// This only creates the config file for the first time, it does not ask for settings to fill with
 bool Settings::save() {
     extern SdFat sd;
     

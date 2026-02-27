@@ -8,6 +8,7 @@
 
 #include <Arduino.h>
 #include <MFRC522.h>
+#include "pins.h"
 
 // Forward declaration
 class ScreenManager;

@@ -46,12 +46,14 @@ void RC522_Module::monitorForTags(ScreenManager& screenManager) {
     
     if (rfid.PICC_IsNewCardPresent()) {
         if (rfid.PICC_ReadCardSerial()) {
+
             noReadCount = 0;
             
             if (!inCardSession) {
                 Serial.println("NFC: Card detected");
                 inCardSession = true;
-                
+                // Disable Bluetooth when NFC detected
+                digitalWrite(BT_ENABLE_PIN, LOW);
                 lastUIDSize = rfid.uid.size;
                 for (byte i = 0; i < lastUIDSize; i++) {
                     lastUID[i] = rfid.uid.uidByte[i];

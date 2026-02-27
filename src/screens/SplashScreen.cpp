@@ -5,9 +5,10 @@
 
 SplashScreen::SplashScreen(ScreenManager& manager, TFT_Module& tftModule)
     : BaseScreen(manager, tftModule),
-      kidsButton(60, 140, 160, 80, "Kids Mode"),
-      mp3Button(260, 140, 160, 80, "MP3 Mode"),
-      settingsButton(420, 10, 50, 50, "")  // Gear icon, top-right
+      kidsButton(60, 140, 160, 70, "Kids Mode"),
+      mp3Button(260, 140, 160, 70, "MP3 Mode"),
+      settingsButton(420, 10, 50, 50, ""),  // Gear icon, top-right
+      bluetoothButton(140, 240, 130, 45, "Bluetooth")  // Top right, next to settings
 {
     // Customize button colors
     kidsButton.setColors(0x07E0, TFT_YELLOW, TFT_WHITE);   // Green bg, yellow border
@@ -54,6 +55,9 @@ void SplashScreen::begin() {
     // Draw settings button with gear icon
     settingsButton.draw(tft);
     drawGearIcon(445, 35, 15);  // Center of settings button
+
+    bluetoothButton.setColors(TFT_BLUE, TFT_WHITE, TFT_WHITE);
+    bluetoothButton.draw(tft);
 }
 
 void SplashScreen::drawGearIcon(int centerX, int centerY, int radius) {
@@ -108,4 +112,9 @@ void SplashScreen::handleTouch(int x, int y) {
         Serial.println("Settings selected");
         screenManager.showSettings();
     }
+    else if (bluetoothButton.hit(x, y)) {
+        Serial.println("Bluetooth button pressed");
+        screenManager.showBluetooth();
+    return;
+}
 }

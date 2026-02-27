@@ -89,6 +89,7 @@ void MP3Screen::drawLayout() {
     display->setTextColor(TFT_WHITE);
     display->setTextDatum(top_left);
     display->setTextSize(1);
+    display->setTextColor(TFT_WHITE, TFT_BLACK);  // White text, black background
     display->drawString(inAlbumView ? "Albums" : "Tracks", 200, 15);
     
     // Back button
@@ -414,13 +415,25 @@ void MP3Screen::handleTouch(int x, int y) {
         return;
     }
 
-    if (playPauseButton.hit(x, y)) {
-        isPlaying = !isPlaying;
-        playPauseButton.setLabel(isPlaying ? "Pause" : "Play");
-        playPauseButton.draw(tft);
-        Serial.println(isPlaying ? "Playing" : "Paused");
-        return;
+if (playPauseButton.hit(x, y)) {
+    extern MP3Player mp3Player;
+    
+    isPlaying = !isPlaying;
+    
+    if (isPlaying) {
+        mp3Player.resume();
+        playPauseButton.setLabel("Pause");
+        Serial.println("Resumed playback");
+    } else {
+        mp3Player.pause();
+        playPauseButton.setLabel("Play");
+        Serial.println("Paused playback");
     }
+    
+    playPauseButton.draw(tft);
+    return;
+}
+
 
     if (nextButton.hit(x, y)) {
         Serial.println("Next track");

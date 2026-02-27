@@ -21,6 +21,7 @@ ScreenManager::ScreenManager(TFT_Module& tftRef, VS1053_Module& audio, SD_Module
       calibrationScreen(nullptr),
       settingsScreen(nullptr),
       writeTagScreen(nullptr),
+      bluetoothScreen(nullptr),
       ftpUploadScreen(nullptr)  // ADD THIS
 {
 }
@@ -33,6 +34,7 @@ ScreenManager::~ScreenManager() {
     delete settingsScreen;
     delete writeTagScreen;  
     delete ftpUploadScreen;  
+    delete bluetoothScreen;
 }
 
 void ScreenManager::begin() {
@@ -42,7 +44,8 @@ void ScreenManager::begin() {
     kidScreen = new KidScreen(*this, tft, audioModule, sdModule);
     settingsScreen = new SettingsScreen(*this, tft);  
     writeTagScreen = new WriteTagScreen(*this, tft, sdModule, nfcModule);   
-    ftpUploadScreen = new FTPUploadScreen(*this, tft, sdModule);      
+    ftpUploadScreen = new FTPUploadScreen(*this, tft, sdModule);  
+    bluetoothScreen = new BluetoothScreen(*this, tft);    
     // Start with splash screen
     switchTo(splashScreen);
 }
@@ -69,6 +72,10 @@ void ScreenManager::showKids() {
 
 void ScreenManager::showSettings() {
     switchTo(settingsScreen);
+}
+
+void ScreenManager::showBluetooth() {
+    switchTo(bluetoothScreen);
 }
 
 void ScreenManager::showCalibration() {

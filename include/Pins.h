@@ -15,14 +15,11 @@
 #define SPI1_MISO        13      // Shared MISO
 
 // =========================
-//   PN5180 NFC READER
+//   RC522 NFC READER
 //   ** WORKING - DO NOT CHANGE **
 // =========================
-#define NFC_CS          16      // PN5180 Chip Select (NSS)
-#define NFC_RST         18      // PN5180 Reset
-//#define NFC_BUSY        14      // PN5180 Busy signal
-//#define NFC_IRQ         15      // PN5180 IRQ (may not be needed)
-//#define NFC_AUX         -1      // PN5180 AUX (not used)
+#define NFC_CS          16      // RC522 Chip Select (NSS)
+#define NFC_RST         18      // RC522 Reset
 
 // =========================
 //   VS1053B AUDIO DECODER
@@ -55,6 +52,9 @@
 //   SD CARD 
 // =========================
 #define SD_CS           2       // SDMMC Data 3
+
+// Bluetooth Control
+#define BT_ENABLE_PIN   1       // VHM-314 power control
 
 
 // =========================
