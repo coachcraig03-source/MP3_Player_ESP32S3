@@ -14,7 +14,7 @@
 #define LIST_H 200
 #define ITEM_HEIGHT 25
 
-WriteTagScreen::WriteTagScreen(ScreenManager& manager, TFT_Module& tftModule, SD_Module& sd, RC522_Module& nfc)
+WriteTagScreen::WriteTagScreen(ScreenManager& manager, TFT_Module& tftModule, SD_Module& sd,PN532_Module& nfc)
     : BaseScreen(manager, tftModule),
       sdModule(sd),
       nfcModule(nfc),
@@ -165,7 +165,10 @@ void WriteTagScreen::selectAlbum(int index) {
 
 void WriteTagScreen::update() {
     if (currentState == WAITING_FOR_TAG) {
-        // Check for tag presence
+        static unsigned long lastCheck = 0;
+        if (millis() - lastCheck < 200) return;  // Check every 200ms
+        lastCheck = millis();
+        
         if (nfcModule.isCardPresent()) {
             writeTag();
         }

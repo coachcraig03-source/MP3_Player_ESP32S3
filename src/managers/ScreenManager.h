@@ -21,7 +21,7 @@ class SD_Module;  // Add this forward declaration
 class ScreenManager {
 public:
     void showBluetooth();
-    ScreenManager(TFT_Module& tft, VS1053_Module& audio, SD_Module& sd, RC522_Module& nfc);
+    ScreenManager(TFT_Module& tft, VS1053_Module& audio, SD_Module& sd, PN532_Module& nfc);
     ~ScreenManager();
 
     void begin();
@@ -40,6 +40,8 @@ public:
     void showSettings();
     void showWriteTag();
     void showFTPUpload();
+    bool isOnSettingsScreen() const;
+    bool isOnWriteTagScreen() const;
     
     // Access to screens (for inter-screen communication)
     KidScreen* getKidScreen() { return kidScreen; }
@@ -60,7 +62,7 @@ private:
     TFT_Module& tft;
     VS1053_Module& audioModule;
     SD_Module& sdModule; 
-    RC522_Module& nfcModule;
+    PN532_Module& nfcModule;
     
     BaseScreen* currentScreen;
     SplashScreen* splashScreen;

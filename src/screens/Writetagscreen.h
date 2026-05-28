@@ -8,14 +8,14 @@
 #include "../managers/BaseScreen.h"
 #include "../ui/UIButton.h"
 #include "../utils/SD_Module.h"
-#include "../utils/RC522_Module.h"
+#include "../utils/PN532_Module.h"
 
 class ScreenManager;
 class TFT_Module;
 
 class WriteTagScreen : public BaseScreen {
 public:
-    WriteTagScreen(ScreenManager& manager, TFT_Module& tft, SD_Module& sd, RC522_Module& nfc);
+    WriteTagScreen(ScreenManager& manager, TFT_Module& tft, SD_Module& sd,  PN532_Module& nfc);
     
     void begin() override;
     void update() override;
@@ -29,7 +29,7 @@ private:
     void writeTag();
     
     SD_Module& sdModule;
-    RC522_Module& nfcModule;
+    PN532_Module&  nfcModule;
     
     UIButton backButton;
     

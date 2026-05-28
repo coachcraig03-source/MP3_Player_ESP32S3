@@ -20,6 +20,7 @@ public:
     void begin() override;
     void update() override;
     void handleTouch(int x, int y) override;
+    bool isAlbumLoaded() const { return albumLoaded; }
     
     // Called when NFC tag is detected
     void showAlbum(const char* albumName);

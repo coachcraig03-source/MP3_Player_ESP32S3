@@ -23,6 +23,7 @@ public:
     
     // Start playing a file
     bool play(const char* path);
+    volatile bool stopRequested = false;
     
     // Control
     void pause();
@@ -31,6 +32,7 @@ public:
     
     // Update (call from main loop)
     void update();
+    void requestStop();
 
     
     // Status

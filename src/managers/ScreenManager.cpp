@@ -8,12 +8,13 @@
 #include "../screens/KidScreen.h"
 #include "../screens/CalibrationScreen.h"
 #include "../utils/TouchCalibration.h"
+#include "../utils/PN532_Module.h"
 
-ScreenManager::ScreenManager(TFT_Module& tftRef, VS1053_Module& audio, SD_Module& sd, RC522_Module& nfc)
+ScreenManager::ScreenManager(TFT_Module& tftRef, VS1053_Module& audio, SD_Module& sd, PN532_Module& nfc)
     : tft(tftRef),
       audioModule(audio),
       sdModule(sd),
-      nfcModule(nfc),  // ADD THIS LINE
+      nfcModule(nfc),
       currentScreen(nullptr),
       splashScreen(nullptr),
       mp3screen(nullptr),
@@ -94,6 +95,14 @@ void ScreenManager::update() {
     if (currentScreen) {
         currentScreen->update();
     }
+}
+
+bool ScreenManager::isOnSettingsScreen() const {
+    return (currentScreen == settingsScreen);
+}
+
+bool ScreenManager::isOnWriteTagScreen() const {
+    return (currentScreen == writeTagScreen);
 }
 
 void ScreenManager::handleTouch(int x, int y) {

@@ -11,6 +11,8 @@ MP3Player::MP3Player(SD_Module& sd, VS1053_Module& audio)
 {
 }
 
+
+
 bool MP3Player::play(const char* path) {
     strncpy(pendingPath, path, sizeof(pendingPath));
     needsOpen = true;
@@ -40,7 +42,17 @@ void MP3Player::stop() {
     }
 }
 
+void MP3Player::requestStop() {
+    stopRequested = true;
+}
+
 void MP3Player::update() {
+    if (stopRequested) {
+        stopRequested = false;
+        stop();
+        return;
+    }
+    // rest of update...
     // Handle file opening on this core
     if (needsOpen) {
         needsOpen = false;

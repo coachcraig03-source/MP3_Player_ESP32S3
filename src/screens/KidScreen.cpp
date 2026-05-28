@@ -46,7 +46,7 @@ KidScreen::KidScreen(ScreenManager& manager, TFT_Module& tftModule, VS1053_Modul
       prevButton(40, 240, 80, 60, "<<"),
       playPauseButton(200, 240, 80, 60, "||"),
       nextButton(360, 240, 80, 60, ">>"),
-      backButton(10, 10, 100, 40, "Back"),
+      //backButton(10, 10, 100, 40, "Back"),
       volumeSlider(440, 80, 30, 200, 0, 100)
 {
     currentAlbum[0] = '\0';
@@ -55,7 +55,7 @@ KidScreen::KidScreen(ScreenManager& manager, TFT_Module& tftModule, VS1053_Modul
     prevButton.setColors(0xF800, TFT_WHITE, TFT_WHITE);      // Red
     playPauseButton.setColors(0x07E0, TFT_WHITE, TFT_BLACK); // Green
     nextButton.setColors(0x001F, TFT_WHITE, TFT_WHITE);      // Blue
-    backButton.setColors(0x632C, TFT_WHITE, TFT_WHITE);      // Gray
+    //backButton.setColors(0x632C, TFT_WHITE, TFT_WHITE);      // Gray
     
     // Set initial volume to 75%
     volumeSlider.setValue(75);
@@ -63,7 +63,7 @@ KidScreen::KidScreen(ScreenManager& manager, TFT_Module& tftModule, VS1053_Modul
 
 void KidScreen::begin() {
     if (!albumLoaded) {
-        drawWaitingScreen();
+        //drawWaitingScreen();
     } else {
         drawPlaybackScreen();
     }
@@ -157,9 +157,9 @@ void KidScreen::handleTouch(int x, int y) {
     
     // Back button always available
     if (backButton.hit(x, y)) {
-        Serial.println("Returning to splash");
-        clearAlbum();
-        screenManager.showSplash();
+        //Serial.println("Returning to splash");
+        //clearAlbum();
+       // screenManager.showSplash();
         return;
     }
 
@@ -375,19 +375,20 @@ albumDir.rewind();
 
 void KidScreen::clearAlbum() {
     extern MP3Player mp3Player;
-    mp3Player.stop();
+    
     Serial.println("Kid Screen: Clearing album (NFC removed)");
     
     albumLoaded = false;
     isPlaying = false;
     currentAlbum[0] = '\0';
     
-    // Stop playback
-    audioModule.stopPlayback();
+    // Request stop safely from Core 1 - Core 0 handles SPI1
+    mp3Player.requestStop();
     
     // Return to splash
     screenManager.showSplash();
 }
+
 
 // Add this method to KidScreen class:
 void KidScreen::displayAlbumArt() {

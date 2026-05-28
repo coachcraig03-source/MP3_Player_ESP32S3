@@ -3,7 +3,7 @@
 #include <Wire.h>
 #include <FT6236.h>
 #include "pins.h"
-#include "utils/RC522_Module.h"
+#include "utils/PN532_Module.h"
 #include "utils/VS1053_Module.h"
 #include "utils/TFT_Module.h"
 #include "utils/TouchCalibration.h"
@@ -15,7 +15,7 @@
 #include "utils/Settings.h"
 
 // Hardware modules
-RC522_Module nfcModule(NFC_CS, NFC_RST);
+PN532_Module nfcModule;
 VS1053_Module audioModule(VS1053_CS, VS1053_DCS, VS1053_DREQ, VS1053_RST);
 TFT_Module tftModule(TFT_CS, TFT_DC, TFT_RST, TFT_BL, SPI2_SCK, SPI2_MOSI, SPI2_MISO);
 SD_Module sdModule(SD_CS);
@@ -135,31 +135,21 @@ void setup() {
 
 
   
-  // Hard reset RC522 first (before any SPI init)
-  pinMode(NFC_RST, OUTPUT);
-  digitalWrite(NFC_RST, LOW);
-  delay(200);
-  digitalWrite(NFC_RST, HIGH);
-  delay(200);
-  
+
+  // Initialize VS1053
+  pinMode(VS1053_RST, OUTPUT);
+  digitalWrite(VS1053_RST, LOW);
+  delay(100);
+  digitalWrite(VS1053_RST, HIGH);
+  delay(100);
+
+
   // Initialize SPI1 bus (RC522 + VS1053 + SD)
   Serial.println("Initializing SPI1 bus...");
   SPI.begin(SPI1_SCK, SPI1_MISO, SPI1_MOSI);
   delay(100);
   
-  // Hold VS1053 in reset during RC522 init
-  pinMode(VS1053_RST, OUTPUT);
-  digitalWrite(VS1053_RST, LOW);
-  delay(100);
-  
-  // Initialize RC522 NFC
-  Serial.println("\nInitializing RC522 NFC...");
-  nfcModule.begin();
-  delay(100);
-  
-  // Release and initialize VS1053
-  digitalWrite(VS1053_RST, HIGH);
-  delay(100);
+
   
   Serial.println("\nInitializing VS1053 Audio...");
   audioModule.begin();
@@ -226,8 +216,15 @@ void setup() {
   touchScreen.begin();
   
   pinMode(TOUCH_INT, INPUT_PULLUP);
-  attachInterrupt(TOUCH_INT, touchISR, FALLING);
+  pinMode(TOUCH_INT, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(TOUCH_INT), touchISR, FALLING);
   Serial.println("Touch: ✓ Ready!");
+
+  // After touchScreen.begin() and before attachInterrupt:
+  Serial.println("\nInitializing PN532 NFC...");
+  nfcModule.begin();
+
+
   
   // Set default calibration values
   TouchCalibration::getInstance().setCalibration(1.5, 1.3, -200, -50);
