@@ -25,7 +25,7 @@ void BluetoothScreen::begin() {
     
     // Stop MP3 playback
     extern MP3Player mp3Player;
-    mp3Player.stop();
+    mp3Player.requestStop();
     
     // Enable Bluetooth module
     pinMode(BT_ENABLE_PIN, OUTPUT);

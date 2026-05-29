@@ -240,7 +240,7 @@ void MP3Screen::drawAlbumArt() {
     auto display = tft.getTFT();
     extern MP3Player mp3Player;
     
-    mp3Player.stop();
+    mp3Player.requestStop();
     delay(100);
 
     if (selectedAlbum < 0) {
@@ -299,11 +299,11 @@ void MP3Screen::selectAlbum(int index) {
 
     if (index < 0 || index >= albumCount) return;
 
-    //mp3Player.stop();
+    //mp3Player.requestStop();
     //delay(100);
     
     // Stop and reset everything first
-    mp3Player.stop();
+    mp3Player.requestStop();
     delay(200);
     
     // Reset VS1053 to clear decoder state (especially after WMA)
@@ -372,7 +372,7 @@ void MP3Screen::selectTrack(int index) {
     
     // Actually play the track!
     extern MP3Player mp3Player;
-    mp3Player.stop();
+    mp3Player.requestStop();
     delay(50);
     
     playTrack(index);
@@ -401,14 +401,14 @@ void MP3Screen::handleTouch(int x, int y) {
     if (backButton.hit(x, y)) {
         if (!inAlbumView) {
             // Go back to album list
-            mp3Player.stop();
+            mp3Player.requestStop();
             delay(100);
             inAlbumView = true;
             scrollOffset = 0;
             drawLayout();
         } else {
             // Go back to splash
-            mp3Player.stop();
+            mp3Player.requestStop();
             delay(300);
             screenManager.showSplash();
         }

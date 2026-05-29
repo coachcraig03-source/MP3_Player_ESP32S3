@@ -190,7 +190,7 @@ void KidScreen::handleTouch(int x, int y) {
                 playPauseButton.setLabel("||");
             } else {
                 // Pause playback
-                mp3Player.pause();  // Or mp3Player.stop() if no pause function
+                mp3Player.pause();  // Or mp3Player.requestStop() if no pause function
                 playPauseButton.setLabel(">");
             }
             
@@ -218,7 +218,7 @@ void KidScreen::playMP3FromSD() {
 
 void KidScreen::showAlbum(const char* albumName) {
     extern MP3Player mp3Player;
-    mp3Player.stop();
+    mp3Player.requestStop();
     delay(200);
     
     // Reset VS1053 to clear any WMA decoder state
@@ -477,7 +477,6 @@ void KidScreen::nextTrack() {
     Serial.printf("KidScreen: Next track - %s\n", trackPath);
     
     extern MP3Player mp3Player;
-    mp3Player.stop();
     delay(300);
     mp3Player.play(trackPath);
 }
@@ -495,7 +494,6 @@ void KidScreen::prevTrack() {
     Serial.printf("KidScreen: Previous track - %s\n", trackPath);
     
     extern MP3Player mp3Player;
-    mp3Player.stop();
     delay(300);
     mp3Player.play(trackPath);
 }

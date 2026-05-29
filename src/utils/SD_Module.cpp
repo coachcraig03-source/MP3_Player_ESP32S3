@@ -16,8 +16,12 @@ SD_Module::SD_Module(uint8_t cs)
 
 bool SD_Module::begin() {
     Serial.println("SD: Initializing...");
-    
+    // Explicitly deassert CS before init
+    //pinMode(_cs, OUTPUT);
+    //digitalWrite(_cs, HIGH);
+    //delay(100);  // Give card time to settle
     // Initialize SPI1 bus
+
     SPI.begin(SPI1_SCK, SPI1_MISO, SPI1_MOSI);
     delay(10);
     
