@@ -132,7 +132,7 @@ void MP3Screen::loadAlbumsFromSD() {
     }
     
     // Open root directory
-    extern SdFat sd;  // Access SD from SD_Module
+    extern SdFs sd;  // Access SD from SD_Module
     FsFile root;
     if (!root.open("/Music")) {
         Serial.println("MP3Screen: Failed to open /Music");
@@ -324,7 +324,7 @@ void MP3Screen::selectAlbum(int index) {
     char folderPath[128];
     snprintf(folderPath, sizeof(folderPath), "/Music/%s", albumNames[index]);  // ADD /Music/
    
-    extern SdFat sd;
+    extern SdFs sd;
     FsFile albumDir;
     if (!albumDir.open(folderPath)) {
         Serial.println("Failed to open album folder");
@@ -370,13 +370,8 @@ void MP3Screen::selectTrack(int index) {
     selectedTrack = index;
     Serial.printf("MP3Screen: Selected track '%s'\n", trackNames[index]);
     
-    // Actually play the track!
-    extern MP3Player mp3Player;
-    mp3Player.requestStop();
-    delay(50);
-    
     playTrack(index);
-    drawLayout();  // Refresh to show selection
+    drawLayout();
 }
 
 void MP3Screen::scrollList(int direction) {

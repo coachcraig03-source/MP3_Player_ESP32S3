@@ -5,6 +5,8 @@
 #include "Settings.h"
 #include <SdFat.h>
 
+extern SdFs sd;
+
 Settings& Settings::getInstance() {
     static Settings instance;
     return instance;
@@ -21,7 +23,7 @@ Settings::Settings()
 }
 
 bool Settings::load() {
-    extern SdFat sd;
+    extern SdFs sd;
     
     FsFile configFile;
     if (!configFile.open("/Settings/config.txt", O_RDONLY)) {
@@ -51,7 +53,7 @@ bool Settings::load() {
 
 // This only creates the config file for the first time, it does not ask for settings to fill with
 bool Settings::save() {
-    extern SdFat sd;
+    extern SdFs sd;
     
     // Create Settings directory if needed
     if (!sd.exists("/Settings")) {

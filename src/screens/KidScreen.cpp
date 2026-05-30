@@ -236,7 +236,7 @@ void KidScreen::showAlbum(const char* albumName) {
     drawPlaybackScreen();
     
     // Fuzzy match album folder in /Music (case-insensitive, apostrophe-tolerant)
-    extern SdFat sd;
+    extern SdFs sd;
     FsFile root;
     if (!root.open("/Music")) {  // CHANGED from "/" to "/Music"
         Serial.println("Failed to open /Music folder");

@@ -49,7 +49,7 @@ void WriteTagScreen::begin() {
 void WriteTagScreen::loadAlbumsFromSD() {
     albumCount = 0;
     
-    extern SdFat sd;
+    extern SdFs sd;
     FsFile root;
     if (!root.open("/Music")) {
         Serial.println("WriteTag: Failed to open /Music");

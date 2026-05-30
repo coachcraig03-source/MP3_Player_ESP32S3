@@ -35,7 +35,7 @@ private:
     uint8_t _cs;
     bool initialized;
     
-    SdFat sd;
+   // SdFs sd;
     FsFile currentFile;
 };
 

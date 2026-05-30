@@ -5,6 +5,8 @@
 #include "SD_Module.h"
 #include <SPI.h>
 
+extern SdFs sd;
+
 #define SPI1_SCK  12
 #define SPI1_MISO 13
 #define SPI1_MOSI 11
@@ -22,10 +24,13 @@ bool SD_Module::begin() {
     //delay(100);  // Give card time to settle
     // Initialize SPI1 bus
 
+    pinMode(_cs, OUTPUT);
+    digitalWrite(_cs, HIGH);
+    delay(250);  // Let card settle longer
     SPI.begin(SPI1_SCK, SPI1_MISO, SPI1_MOSI);
-    delay(10);
+    delay(100);
     
-    if (!sd.begin(_cs, SD_SCK_MHZ(25))) {
+    if (!sd.begin(SdSpiConfig(_cs, SHARED_SPI, SD_SCK_MHZ(25)))) {
         Serial.println("SD: ✗ Initialization failed!");
         return false;
     }

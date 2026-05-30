@@ -22,7 +22,8 @@ SD_Module sdModule(SD_CS);
 FT6236 touchScreen;
 MP3Player mp3Player(sdModule, audioModule);
 
-SdFat sd;  // ADD THIS - global SD object for web server
+//SdFat sd;  // ADD THIS - global SD object for web server
+SdFs sd;
 
 // Screen management
 ScreenManager screenManager(tftModule, audioModule, sdModule, nfcModule); 
@@ -133,8 +134,34 @@ void setup() {
   
   Serial.println("\n=== NFC MP3 Player Starting ===\n");
 
+//// TEST setup of the SD card
+Serial.printf("VS1053_CS=%d VS1053_DCS=%d SD_CS=%d\n", VS1053_CS, VS1053_DCS, SD_CS);
+/*pinMode(VS1053_CS, OUTPUT);
+digitalWrite(VS1053_CS, HIGH);
+pinMode(VS1053_DCS, OUTPUT);
+digitalWrite(VS1053_DCS, HIGH);
+pinMode(SD_CS, OUTPUT);
+digitalWrite(SD_CS, HIGH);*/
+Serial.printf("MISO state: %d\n", digitalRead(SPI1_MISO));
+Serial.println("=== Early SD Test ===");
+// Full SPI peripheral reset for ESP32-S3
 
+
+SPI.begin(SPI1_SCK, SPI1_MISO, SPI1_MOSI);
+delay(100);
+pinMode(SD_CS, OUTPUT);
+digitalWrite(SD_CS, HIGH);
+delay(250);
+SdFs testSd;
+if (!testSd.begin(SdSpiConfig(SD_CS, SHARED_SPI, SD_SCK_MHZ(4)))) {
+    Serial.println("Early SD test FAILED");
+} else {
+    Serial.println("Early SD test PASSED");
+}
   
+
+
+/////////////////////////
 
   // Initialize VS1053
   pinMode(VS1053_RST, OUTPUT);
@@ -163,10 +190,20 @@ void setup() {
   Serial.println("Audio test complete");
   
   delay(100);
-  
+
   // Initialize SD Card
-  Serial.println("\nInitializing SD Card...");
-  if (!sdModule.begin()) {
+
+
+// Reinit SPI before SD - VS1053 leaves bus dirty
+pinMode(SD_CS, OUTPUT);
+digitalWrite(SD_CS, HIGH);
+delay(250);
+SPI.begin(SPI1_SCK, SPI1_MISO, SPI1_MOSI);
+delay(250);
+
+// Initialize SD Card
+Serial.println("\nInitializing SD Card...");
+if (!sdModule.begin()) {
     Serial.println("SD Card failed - MP3 playback won't work!");
   } else {
     Serial.println("SD Card ready!");
@@ -194,6 +231,9 @@ void setup() {
       0
   );
   Serial.println("MP3 task created");
+
+
+
   
   // Initialize TFT
   Serial.println("\nInitializing TFT Display...");
@@ -214,6 +254,8 @@ void setup() {
   
   Wire.begin(I2C_SDA, I2C_SCL);
   touchScreen.begin();
+
+
   
   pinMode(TOUCH_INT, INPUT_PULLUP);
   pinMode(TOUCH_INT, INPUT_PULLUP);
