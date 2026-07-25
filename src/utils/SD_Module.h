@@ -35,8 +35,12 @@ private:
     uint8_t _cs;
     bool initialized;
     
-   // SdFs sd;
     FsFile currentFile;
+
+    // --- instrumentation only, no behavioral effect ---
+    unsigned long _readCount = 0;
+    unsigned long _slowReadCount = 0;
+    unsigned long _worstReadUs = 0;
 };
 
 #endif // SD_MODULE_H

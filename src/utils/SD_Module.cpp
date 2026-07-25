@@ -18,12 +18,6 @@ SD_Module::SD_Module(uint8_t cs)
 
 bool SD_Module::begin() {
     Serial.println("SD: Initializing...");
-    // Explicitly deassert CS before init
-    //pinMode(_cs, OUTPUT);
-    //digitalWrite(_cs, HIGH);
-    //delay(100);  // Give card time to settle
-    // Initialize SPI1 bus
-
     pinMode(_cs, OUTPUT);
     digitalWrite(_cs, HIGH);
     delay(250);  // Let card settle longer
@@ -52,28 +46,24 @@ bool SD_Module::getFirstMP3(char* path, size_t pathSize) {
     
     Serial.println("SD: Searching for first MP3...");
     
-    // Open root directory
     FsFile root;
     if (!root.open("/")) {
         Serial.println("SD: Failed to open root");
         return false;
     }
     
-    // Search through directories for first MP3
     FsFile dir;
     while (dir.openNext(&root, O_RDONLY)) {
         if (dir.isDirectory()) {
             char dirName[64];
             dir.getName(dirName, sizeof(dirName));
             
-            // Look for MP3 in this directory
             FsFile file;
             while (file.openNext(&dir, O_RDONLY)) {
                 char fileName[64];
                 file.getName(fileName, sizeof(fileName));
                 
                 if (strstr(fileName, ".mp3") || strstr(fileName, ".MP3")) {
-                    // Found an MP3! Build full path
                     snprintf(path, pathSize, "/%s/%s", dirName, fileName);
                     Serial.printf("SD: Found MP3: %s\n", path);
                     
@@ -99,7 +89,6 @@ bool SD_Module::openFile(const char* path) {
         return false;
     }
     
-    // Close any previously open file
     if (currentFile.isOpen()) {
         currentFile.close();
     }
@@ -113,10 +102,16 @@ bool SD_Module::openFile(const char* path) {
         return false;
     }
     
-Serial.printf("SD: Opened %s (raw size=%lu, cast size=%lu)\n", 
-              path, 
-              (unsigned long)currentFile.fileSize(),
-              (unsigned long)currentFile.size());
+    Serial.printf("SD: Opened %s (raw size=%lu, cast size=%lu)\n", 
+                  path, 
+                  (unsigned long)currentFile.fileSize(),
+                  (unsigned long)currentFile.size());
+
+    // Reset instrumentation counters for the new file
+    _readCount = 0;
+    _slowReadCount = 0;
+    _worstReadUs = 0;
+
     return true;
 }
 
@@ -124,6 +119,14 @@ void SD_Module::closeFile() {
     if (currentFile.isOpen()) {
         currentFile.close();
         Serial.println("SD: File closed");
+
+        // Summary for this file, so we get one line per track instead of
+        // spamming per-chunk - easier to correlate with an audible glitch
+        // and to see the trend across an album.
+        Serial.printf("SD: [stats] reads=%lu slow(>3ms)=%lu worst=%luus\n",
+                      (unsigned long)_readCount,
+                      (unsigned long)_slowReadCount,
+                      (unsigned long)_worstReadUs);
     }
 }
 
@@ -131,15 +134,25 @@ size_t SD_Module::readChunk(uint8_t* buffer, size_t size) {
     if (!currentFile.isOpen()) {
         return 0;
     }
-    
-    // Reinitialize SPI1 before reading
-    //SPI.begin(SPI1_SCK, SPI1_MISO, SPI1_MOSI);
-    //delay(1);
-    
-    return currentFile.read(buffer, size);
-}
 
-// Add this method to SD_Module.cpp
+    unsigned long t0 = micros();
+    size_t n = currentFile.read(buffer, size);
+    unsigned long dt = micros() - t0;
+
+    _readCount++;
+    if (dt > _worstReadUs) _worstReadUs = dt;
+
+    // Flag anything slower than 3ms - at 44.1kHz stereo the VS1053's
+    // onboard buffer only holds a few milliseconds of audio, so a read
+    // stall in this neighborhood is a real glitch candidate.
+   // if (dt > 3000) {
+    //    _slowReadCount++;
+   //     Serial.printf("SD: [slow read] %lu bytes took %lu us (read #%lu)\n",
+   //                   (unsigned long)n, dt, (unsigned long)_readCount);
+   // }
+
+    return n;
+}
 
 bool SD_Module::getAlbumArt(const char* folderPath, char* artPath, size_t pathSize) {
     if (!initialized) {
@@ -147,24 +160,20 @@ bool SD_Module::getAlbumArt(const char* folderPath, char* artPath, size_t pathSi
         return false;
     }
     
-    // Reinitialize SPI1
     SPI.begin(SPI1_SCK, SPI1_MISO, SPI1_MOSI);
     delay(5);
     
-    // Open the folder
     FsFile dir;
     if (!dir.open(folderPath)) {
         Serial.printf("SD: Failed to open folder %s\n", folderPath);
         return false;
     }
     
-    // Look for common album art filenames
     const char* artNames[] = {"folder.jpg", "cover.jpg", "album.jpg", "front.jpg"};
     
     for (int i = 0; i < 4; i++) {
         FsFile artFile;
         if (artFile.open(&dir, artNames[i], O_RDONLY)) {
-            // Found album art!
             snprintf(artPath, pathSize, "%s/%s", folderPath, artNames[i]);
             Serial.printf("SD: Found album art: %s\n", artPath);
             artFile.close();

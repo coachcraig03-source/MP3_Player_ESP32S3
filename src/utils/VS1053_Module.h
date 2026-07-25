@@ -15,7 +15,9 @@ public:
     bool isAlive();
     void getChipInfo();
     void softReset();
-    
+    void resetForNextTrack();   // ADD THIS LINE
+
+
     // Playback control
     void stopPlayback();
     void playTestTone(uint16_t frequency = 440);
@@ -35,6 +37,11 @@ private:
     uint16_t readRegister(uint8_t reg);
     void writeData(uint8_t data);
 
+    // --- instrumentation only, no behavioral effect ---
+    unsigned long _sendCount = 0;
+    unsigned long _slowWaitCount = 0;
+    unsigned long _worstWaitUs = 0;
+    unsigned long _totalWaitUs = 0;
 };
 
 #endif // VS1053_MODULE_H

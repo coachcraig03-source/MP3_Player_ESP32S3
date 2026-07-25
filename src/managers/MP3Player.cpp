@@ -37,7 +37,7 @@ void MP3Player::resume() {
 void MP3Player::stop() {
     if (state != IDLE) {
         sdModule.closeFile();
-        audioModule.stopPlayback();
+        audioModule.resetForNextTrack();   // CHANGED — was: audioModule.stopPlayback();
         state = IDLE;
         Serial.println("MP3Player: Stopped");
     }

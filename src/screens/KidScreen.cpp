@@ -63,7 +63,7 @@ KidScreen::KidScreen(ScreenManager& manager, TFT_Module& tftModule, VS1053_Modul
 
 void KidScreen::begin() {
     if (!albumLoaded) {
-        //drawWaitingScreen();
+        drawWaitingScreen();
     } else {
         drawPlaybackScreen();
     }
@@ -134,11 +134,11 @@ void KidScreen::update() {
 void KidScreen::handleTouch(int x, int y) {
     // Check volume slider first (always available)
     
-    Serial.printf("KidScreen got touch: (%d,%d)\n", x, y);
-    Serial.printf("  Slider bounds: x=%d-%d, y=%d-%d\n", 
-                  440-30, 440+30+30, 80-10, 80+200+10);
-    Serial.printf("  PlayPause bounds: x=%d-%d, y=%d-%d\n",
-                  200, 200+80, 240, 240+60);
+    //Serial.printf("KidScreen got touch: (%d,%d)\n", x, y);
+    //Serial.printf("  Slider bounds: x=%d-%d, y=%d-%d\n", 
+     //             440-30, 440+30+30, 80-10, 80+200+10);
+    //Serial.printf("  PlayPause bounds: x=%d-%d, y=%d-%d\n",
+     //             200, 200+80, 240, 240+60);
 
     if (volumeSlider.handleTouch(x, y)) {
         int volume = volumeSlider.getValue();

@@ -48,6 +48,8 @@ void ScreenManager::begin() {
     ftpUploadScreen = new FTPUploadScreen(*this, tft, sdModule);  
     bluetoothScreen = new BluetoothScreen(*this, tft);    
     // Start with splash screen
+    //calibrationScreen = new CalibrationScreen(*this, tft);
+    //switchTo(calibrationScreen);
     switchTo(splashScreen);
 }
 
