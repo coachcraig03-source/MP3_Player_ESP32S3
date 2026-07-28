@@ -3,6 +3,7 @@
 // =====================================================================
 
 #include "VS1053_Module.h"
+#include "SPIBusLock.h"
 #include <SPI.h>
 
 // VS1053 Register definitions
@@ -31,10 +32,11 @@
 VS1053_Module::VS1053_Module(uint8_t cs, uint8_t dcs, uint8_t dreq, uint8_t rst)
     : _cs(cs), _dcs(dcs), _dreq(dreq), _rst(rst)
 {
-    _resetMutex = xSemaphoreCreateMutex();
 }
 
 void VS1053_Module::setVolume(uint8_t volume) {
+    SPIBusGuard guard;
+
     uint8_t vs1053_vol = map(volume, 0, 100, 0x50, 0x00);
     uint16_t vol_stereo = (vs1053_vol << 8) | vs1053_vol;
 
@@ -55,6 +57,8 @@ void VS1053_Module::setVolume(uint8_t volume) {
 }
 
 void VS1053_Module::setSampleRate(uint16_t rate) {
+    SPIBusGuard guard;
+
     writeRegister(0x05, rate);
     Serial.printf("VS1053: Sample rate set to %d Hz\n", rate);
 
@@ -65,6 +69,8 @@ void VS1053_Module::setSampleRate(uint16_t rate) {
 }
 
 void VS1053_Module::begin() {
+    SPIBusGuard guard;
+
     Serial.println("VS1053: Initializing...");
     
     pinMode(_cs, OUTPUT);
@@ -115,12 +121,16 @@ void VS1053_Module::begin() {
 }
 
 bool VS1053_Module::isAlive() {
+    SPIBusGuard guard;
+
     uint16_t status = readRegister(SCI_STATUS);
     Serial.printf("VS1053: ✓ STATUS register: 0x%04X\n", status);
     return (status != 0x0000 && status != 0xFFFF);
 }
 
 void VS1053_Module::getChipInfo() {
+    SPIBusGuard guard;
+
     Serial.println("=== VS1053 Chip Information ===");
     Serial.printf("MODE:        0x%04X\n", readRegister(SCI_MODE));
     Serial.printf("STATUS:      0x%04X\n", readRegister(SCI_STATUS));
@@ -134,6 +144,8 @@ void VS1053_Module::getChipInfo() {
 }
 
 void VS1053_Module::playTestTone(uint16_t frequency) {
+    SPIBusGuard guard;
+
     Serial.printf("VS1053: Starting %dHz tone\n", frequency);
     
     SPI.begin(SPI1_SCK, SPI1_MISO, SPI1_MOSI);
@@ -149,7 +161,7 @@ void VS1053_Module::playTestTone(uint16_t frequency) {
     SPI.endTransaction();
     delay(10);
     
-    while (!digitalRead(_dreq)) delay(1);
+    waitDREQ(200);
     
     SPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
     digitalWrite(_dcs, LOW);
@@ -168,6 +180,8 @@ void VS1053_Module::playTestTone(uint16_t frequency) {
 }
 
 void VS1053_Module::stopPlayback() {
+    SPIBusGuard guard;
+
     Serial.println("VS1053: Stopping playback");
     
     waitDREQ(200);
@@ -196,7 +210,7 @@ bool VS1053_Module::waitDREQ(unsigned long timeoutMs) {
     while (!digitalRead(_dreq)) {
         delay(1);
         if (millis() - start > timeoutMs) {
-            Serial.println("VS1053: DREQ wait timeout (writeRegister/readRegister)");
+            Serial.println("VS1053: DREQ wait timeout");
             return false;
         }
     }
@@ -204,6 +218,8 @@ bool VS1053_Module::waitDREQ(unsigned long timeoutMs) {
 }
 
 void VS1053_Module::writeRegister(uint8_t reg, uint16_t value) {
+    SPIBusGuard guard;
+
     waitDREQ(200);
     
     SPI.beginTransaction(SPISettings(250000, MSBFIRST, SPI_MODE0));
@@ -217,6 +233,8 @@ void VS1053_Module::writeRegister(uint8_t reg, uint16_t value) {
 }
 
 uint16_t VS1053_Module::readRegister(uint8_t reg) {
+    SPIBusGuard guard;
+
     waitDREQ(200);
     
     SPI.beginTransaction(SPISettings(250000, MSBFIRST, SPI_MODE0));
@@ -232,63 +250,41 @@ uint16_t VS1053_Module::readRegister(uint8_t reg) {
 }
 
 void VS1053_Module::softReset() {
-    xSemaphoreTake(_resetMutex, portMAX_DELAY);
+    SPIBusGuard guard;  // held across the whole sequence below
 
     writeRegister(SCI_MODE, 0x0804);
     delay(100);
 
-    unsigned long startWait = millis();
-    while (!digitalRead(_dreq)) {
-        delay(1);
-        if (millis() - startWait > 200) {
-            Serial.println("VS1053: softReset() DREQ timeout - continuing anyway");
-            break;
-        }
-    }
-
-    xSemaphoreGive(_resetMutex);
+    waitDREQ(200);
 }
 
 void VS1053_Module::resetForNextTrack() {
-    xSemaphoreTake(_resetMutex, portMAX_DELAY);
+    SPIBusGuard guard;  // held across the whole sequence below
 
     Serial.println("VS1053: Resetting decoder for next track");
 
-    // Inlined reset sequence (rather than calling softReset()) so the
-    // whole thing - reset, DREQ wait, AND the CLOCKF/bass restore - happens
-    // under a single mutex hold. Calling softReset() here would release
-    // the mutex right after its own DREQ wait, leaving a gap where the
-    // other core could jump in before CLOCKF gets restored.
     writeRegister(SCI_MODE, 0x0804);
     delay(100);
-
-    unsigned long startWait = millis();
-    while (!digitalRead(_dreq)) {
-        delay(1);
-        if (millis() - startWait > 200) {
-            Serial.println("VS1053: resetForNextTrack() DREQ timeout - continuing anyway");
-            break;
-        }
-    }
+    waitDREQ(200);
 
     writeRegister(0x02, 0x0000);        // bass/treble back to neutral
     writeRegister(SCI_CLOCKF, 0x8800);  // restore 3.5x clock multiplier
-
-    xSemaphoreGive(_resetMutex);
 }
 
 bool VS1053_Module::isReadyForData() {
+    // Plain GPIO read, not a bus operation - no lock needed.
     return digitalRead(_dreq) == HIGH;
 }
 
 void VS1053_Module::sendMP3Data(uint8_t* data, size_t len) {
+    // Locked for the WHOLE call (not per 32-byte packet) so a single
+    // audio chunk send is atomic relative to SD access on the other core.
+    SPIBusGuard guard;
+
     size_t sent = 0;
-    unsigned long chunkWaitTotal = 0;
-    unsigned long chunkWaitWorst = 0;
 
     while (sent < len) {
         unsigned long startWait = millis();
-        unsigned long startWaitUs = micros();
         while (!digitalRead(_dreq)) {
             vTaskDelay(1);
             
@@ -297,9 +293,6 @@ void VS1053_Module::sendMP3Data(uint8_t* data, size_t len) {
                 return;
             }
         }
-        unsigned long waitUs = micros() - startWaitUs;
-        chunkWaitTotal += waitUs;
-        if (waitUs > chunkWaitWorst) chunkWaitWorst = waitUs;
         
         size_t chunkSize = min((size_t)32, len - sent);
         
@@ -315,5 +308,4 @@ void VS1053_Module::sendMP3Data(uint8_t* data, size_t len) {
     }
 
     _sendCount++;
-    _totalWaitUs += chunkWaitTotal;
 }

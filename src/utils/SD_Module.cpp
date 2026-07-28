@@ -3,6 +3,7 @@
 // =====================================================================
 
 #include "SD_Module.h"
+#include "SPIBusLock.h"
 #include <SPI.h>
 
 extern SdFs sd;
@@ -17,6 +18,8 @@ SD_Module::SD_Module(uint8_t cs)
 }
 
 bool SD_Module::begin() {
+    SPIBusGuard guard;
+
     Serial.println("SD: Initializing...");
     pinMode(_cs, OUTPUT);
     digitalWrite(_cs, HIGH);
@@ -39,6 +42,8 @@ bool SD_Module::begin() {
 }
 
 bool SD_Module::getFirstMP3(char* path, size_t pathSize) {
+    SPIBusGuard guard;
+
     if (!initialized) {
         Serial.println("SD: Not initialized!");
         return false;
@@ -84,6 +89,8 @@ bool SD_Module::getFirstMP3(char* path, size_t pathSize) {
 }
 
 bool SD_Module::openFile(const char* path) {
+    SPIBusGuard guard;
+
     if (!initialized) {
         Serial.println("SD: Not initialized!");
         return false;
@@ -116,6 +123,8 @@ bool SD_Module::openFile(const char* path) {
 }
 
 void SD_Module::closeFile() {
+    SPIBusGuard guard;
+
     if (currentFile.isOpen()) {
         currentFile.close();
         Serial.println("SD: File closed");
@@ -131,6 +140,8 @@ void SD_Module::closeFile() {
 }
 
 size_t SD_Module::readChunk(uint8_t* buffer, size_t size) {
+    SPIBusGuard guard;
+
     if (!currentFile.isOpen()) {
         return 0;
     }
@@ -145,16 +156,18 @@ size_t SD_Module::readChunk(uint8_t* buffer, size_t size) {
     // Flag anything slower than 3ms - at 44.1kHz stereo the VS1053's
     // onboard buffer only holds a few milliseconds of audio, so a read
     // stall in this neighborhood is a real glitch candidate.
-   // if (dt > 3000) {
-    //    _slowReadCount++;
-   //     Serial.printf("SD: [slow read] %lu bytes took %lu us (read #%lu)\n",
-   //                   (unsigned long)n, dt, (unsigned long)_readCount);
-   // }
+    if (dt > 3000) {
+        _slowReadCount++;
+        Serial.printf("SD: [slow read] %lu bytes took %lu us (read #%lu)\n",
+                      (unsigned long)n, dt, (unsigned long)_readCount);
+    }
 
     return n;
 }
 
 bool SD_Module::getAlbumArt(const char* folderPath, char* artPath, size_t pathSize) {
+    SPIBusGuard guard;
+
     if (!initialized) {
         Serial.println("SD: Not initialized!");
         return false;

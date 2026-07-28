@@ -7,6 +7,7 @@
 #include "../utils/TFT_Module.h"
 #include "../utils/VS1053_Module.h"
 #include "../utils/SD_Module.h"  
+#include "../utils/SPIBusLock.h"
 #include "../managers/MP3Player.h"  
 #include <LovyanGFX.hpp>
 #include <TJpg_Decoder.h>
@@ -217,6 +218,12 @@ void KidScreen::playMP3FromSD() {
 }
 
 void KidScreen::showAlbum(const char* albumName) {
+    // This function talks to the global `sd` object directly (not through
+    // SD_Module), so it was NOT covered by SD_Module's internal locking.
+    // That gap is what caused the SPI assert crash when an NFC tag was
+    // placed while Core 0 was mid-stream. Lock for the whole function.
+    SPIBusGuard guard;
+
     extern MP3Player mp3Player;
     mp3Player.requestStop();
     delay(200);

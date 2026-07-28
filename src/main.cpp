@@ -10,6 +10,7 @@
 #include "managers/ScreenManager.h"
 #include "utils/SD_Module.h"
 #include "managers/MP3Player.h"
+#include "utils/SPIBusLock.h"
 #include <WiFi.h>
 #include <time.h>
 #include "utils/Settings.h"
@@ -133,6 +134,10 @@ void setup() {
   delay(4000);
   
   Serial.println("\n=== NFC MP3 Player Starting ===\n");
+
+  // Must run before anything below touches the shared SPI1 bus
+  // (SD_Module, VS1053_Module both take this lock internally now).
+  initSPIBusLock();
 
 //// TEST setup of the SD card
 Serial.printf("VS1053_CS=%d VS1053_DCS=%d SD_CS=%d\n", VS1053_CS, VS1053_DCS, SD_CS);

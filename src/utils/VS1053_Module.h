@@ -6,7 +6,6 @@
 #define VS1053_MODULE_H
 
 #include <Arduino.h>
-#include <freertos/semphr.h>
 
 class VS1053_Module {
 public:
@@ -37,18 +36,6 @@ private:
     uint16_t readRegister(uint8_t reg);
     void writeData(uint8_t data);
     bool waitDREQ(unsigned long timeoutMs);  // shared, timeout-protected DREQ wait
-
-    // Serializes reset sequences between cores. MP3Player::stop() runs on
-    // Core 0 (natural end-of-track) and calls resetForNextTrack(); user
-    // album selection runs on Core 1 and calls softReset() directly. Both
-    // are multi-step sequences (register write, delay, DREQ wait, more
-    // register writes) that are NOT atomic as a whole even though each
-    // individual SPI transfer is protected - if both cores start a reset
-    // sequence close together, they can interleave and leave the chip in
-    // a state where DREQ stops behaving predictably. This mutex makes one
-    // core wait for the other to finish its full reset before starting
-    // its own.
-    SemaphoreHandle_t _resetMutex;
 
     // --- instrumentation only, no behavioral effect ---
     unsigned long _sendCount = 0;

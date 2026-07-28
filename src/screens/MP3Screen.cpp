@@ -7,6 +7,7 @@
 #include "../utils/TFT_Module.h"
 #include "../utils/SD_Module.h"
 #include "../utils/VS1053_Module.h"
+#include "../utils/SPIBusLock.h"
 #include "../managers/MP3Player.h"  
 #include <LovyanGFX.hpp>
 #include <SdFat.h>
@@ -124,6 +125,10 @@ void MP3Screen::drawLayout() {
 }
 
 void MP3Screen::loadAlbumsFromSD() {
+    // Direct access to the global `sd` object, not through SD_Module -
+    // same gap that caused the crash in KidScreen::showAlbum(). Lock it.
+    SPIBusGuard guard;
+
     Serial.println("MP3Screen: Loading albums from SD...");
     
     if (!sdModule.isInitialized()) {
@@ -293,6 +298,12 @@ void MP3Screen::drawAlbumArt() {
 }
 
 void MP3Screen::selectAlbum(int index) {
+    // selectAlbum() also touches the global `sd` object directly further
+    // down (the track-scan loop), same gap as loadAlbumsFromSD(). Lock
+    // for the whole function - softReset() and drawAlbumArt() take the
+    // same lock internally too, which is safe since it's recursive.
+    SPIBusGuard guard;
+
     extern MP3Player mp3Player;
     
     Serial.printf("Free heap: %d bytes\n", ESP.getFreeHeap());
