@@ -20,12 +20,11 @@ public:
     void handleTouch(int x, int y) override;
 
 private:
-    UIButton bluetoothButton;  // Add this
+    UIButton bluetoothButton;
     void drawGearIcon(int centerX, int centerY, int radius);
     
-    UIButton kidsButton;
     UIButton mp3Button;
-    UIButton settingsButton;  // Changed from calibrateButton
+    UIButton settingsButton;
 };
 
 #endif // SPLASH_SCREEN_H

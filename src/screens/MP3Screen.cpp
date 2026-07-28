@@ -299,9 +299,6 @@ void MP3Screen::selectAlbum(int index) {
 
     if (index < 0 || index >= albumCount) return;
 
-    //mp3Player.requestStop();
-    //delay(100);
-    
     // Stop and reset everything first
     mp3Player.requestStop();
     delay(200);
@@ -312,10 +309,6 @@ void MP3Screen::selectAlbum(int index) {
 
     selectedAlbum = index;
     Serial.printf("MP3Screen: Selected album '%s'\n", albumNames[index]);
-    
-    // Load album art FIRST (before starting playback to avoid SPI conflict)
-    //drawAlbumArt();
-    //delay(100);  // Let SPI settle
     
     // Load tracks from this album folder
     trackCount = 0;

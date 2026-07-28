@@ -5,15 +5,14 @@
 
 SplashScreen::SplashScreen(ScreenManager& manager, TFT_Module& tftModule)
     : BaseScreen(manager, tftModule),
-      kidsButton(60, 140, 160, 70, "Kids Mode"),
-      mp3Button(260, 140, 160, 70, "MP3 Mode"),
-      settingsButton(420, 10, 50, 50, ""),  // Gear icon, top-right
-      bluetoothButton(140, 240, 130, 45, "Bluetooth")  // Top right, next to settings
+      mp3Button(60, 140, 160, 70, "MP3 Mode"),        // moved left, was Kids Mode's slot
+      settingsButton(420, 10, 50, 50, ""),             // Gear icon, top-right
+      bluetoothButton(260, 140, 160, 70, "Bluetooth")  // moved here, was MP3 Mode's slot
 {
     // Customize button colors
-    kidsButton.setColors(0x07E0, TFT_YELLOW, TFT_WHITE);   // Green bg, yellow border
-    mp3Button.setColors(0x001F, TFT_CYAN, TFT_WHITE);      // Blue bg, cyan border
+    mp3Button.setColors(0x001F, TFT_CYAN, TFT_WHITE);       // Blue bg, cyan border
     settingsButton.setColors(0x632C, TFT_WHITE, TFT_WHITE); // Gray bg
+    bluetoothButton.setColors(TFT_BLUE, TFT_WHITE, TFT_WHITE);
 }
 
 void SplashScreen::begin() {
@@ -49,15 +48,12 @@ void SplashScreen::begin() {
     }
     
     // Draw mode buttons
-    kidsButton.draw(tft);
     mp3Button.draw(tft);
+    bluetoothButton.draw(tft);
     
     // Draw settings button with gear icon
     settingsButton.draw(tft);
     drawGearIcon(445, 35, 15);  // Center of settings button
-
-    bluetoothButton.setColors(TFT_BLUE, TFT_WHITE, TFT_WHITE);
-    bluetoothButton.draw(tft);
 }
 
 void SplashScreen::drawGearIcon(int centerX, int centerY, int radius) {
@@ -100,11 +96,7 @@ void SplashScreen::update() {
 }
 
 void SplashScreen::handleTouch(int x, int y) {
-    if (kidsButton.hit(x, y)) {
-        Serial.println("Kids Mode selected");
-        screenManager.showKids();
-    }
-    else if (mp3Button.hit(x, y)) {
+    if (mp3Button.hit(x, y)) {
         Serial.println("MP3 Mode selected");
         screenManager.showMP3();
     }
@@ -115,6 +107,6 @@ void SplashScreen::handleTouch(int x, int y) {
     else if (bluetoothButton.hit(x, y)) {
         Serial.println("Bluetooth button pressed");
         screenManager.showBluetooth();
-    return;
-}
+        return;
+    }
 }

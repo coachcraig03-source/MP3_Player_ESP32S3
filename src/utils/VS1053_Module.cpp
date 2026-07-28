@@ -31,6 +31,7 @@
 VS1053_Module::VS1053_Module(uint8_t cs, uint8_t dcs, uint8_t dreq, uint8_t rst)
     : _cs(cs), _dcs(dcs), _dreq(dreq), _rst(rst)
 {
+    _resetMutex = xSemaphoreCreateMutex();
 }
 
 void VS1053_Module::setVolume(uint8_t volume) {
@@ -57,8 +58,6 @@ void VS1053_Module::setSampleRate(uint16_t rate) {
     writeRegister(0x05, rate);
     Serial.printf("VS1053: Sample rate set to %d Hz\n", rate);
 
-    // Reset per-track instrumentation counters here since this is called
-    // once at the start of each track's playback.
     _sendCount = 0;
     _slowWaitCount = 0;
     _worstWaitUs = 0;
@@ -170,18 +169,8 @@ void VS1053_Module::playTestTone(uint16_t frequency) {
 
 void VS1053_Module::stopPlayback() {
     Serial.println("VS1053: Stopping playback");
-
-    // Print instrumentation summary for the track that just ended, before
-    // anything else happens.
-   // if (_sendCount > 0) {
-  //      Serial.printf("VS1053: [stats] sendMP3Data calls=%lu slowWaits(>3ms)=%lu worst=%luus avgWait=%luus\n",
-  //                    (unsigned long)_sendCount,
-  //                    (unsigned long)_slowWaitCount,
-  //                    (unsigned long)_worstWaitUs,
-  //                    (unsigned long)(_totalWaitUs / _sendCount));
-  //  }
     
-    while (!digitalRead(_dreq)) delay(1);
+    waitDREQ(200);
     
     SPI.beginTransaction(SPISettings(250000, MSBFIRST, SPI_MODE0));
     digitalWrite(_dcs, LOW);
@@ -202,8 +191,20 @@ void VS1053_Module::stopPlayback() {
     writeRegister(SCI_MODE, mode & ~0x0020);
 }
 
+bool VS1053_Module::waitDREQ(unsigned long timeoutMs) {
+    unsigned long start = millis();
+    while (!digitalRead(_dreq)) {
+        delay(1);
+        if (millis() - start > timeoutMs) {
+            Serial.println("VS1053: DREQ wait timeout (writeRegister/readRegister)");
+            return false;
+        }
+    }
+    return true;
+}
+
 void VS1053_Module::writeRegister(uint8_t reg, uint16_t value) {
-    while (!digitalRead(_dreq)) delay(1);
+    waitDREQ(200);
     
     SPI.beginTransaction(SPISettings(250000, MSBFIRST, SPI_MODE0));
     digitalWrite(_cs, LOW);
@@ -216,7 +217,7 @@ void VS1053_Module::writeRegister(uint8_t reg, uint16_t value) {
 }
 
 uint16_t VS1053_Module::readRegister(uint8_t reg) {
-    while (!digitalRead(_dreq)) delay(1);
+    waitDREQ(200);
     
     SPI.beginTransaction(SPISettings(250000, MSBFIRST, SPI_MODE0));
     digitalWrite(_cs, LOW);
@@ -231,19 +232,49 @@ uint16_t VS1053_Module::readRegister(uint8_t reg) {
 }
 
 void VS1053_Module::softReset() {
+    xSemaphoreTake(_resetMutex, portMAX_DELAY);
+
     writeRegister(SCI_MODE, 0x0804);
     delay(100);
-    
-    while (!digitalRead(_dreq)) delay(1);
+
+    unsigned long startWait = millis();
+    while (!digitalRead(_dreq)) {
+        delay(1);
+        if (millis() - startWait > 200) {
+            Serial.println("VS1053: softReset() DREQ timeout - continuing anyway");
+            break;
+        }
+    }
+
+    xSemaphoreGive(_resetMutex);
 }
 
 void VS1053_Module::resetForNextTrack() {
+    xSemaphoreTake(_resetMutex, portMAX_DELAY);
+
     Serial.println("VS1053: Resetting decoder for next track");
-    softReset();                        // SM_SDINEW + SM_RESET, same sequence used at boot
+
+    // Inlined reset sequence (rather than calling softReset()) so the
+    // whole thing - reset, DREQ wait, AND the CLOCKF/bass restore - happens
+    // under a single mutex hold. Calling softReset() here would release
+    // the mutex right after its own DREQ wait, leaving a gap where the
+    // other core could jump in before CLOCKF gets restored.
+    writeRegister(SCI_MODE, 0x0804);
+    delay(100);
+
+    unsigned long startWait = millis();
+    while (!digitalRead(_dreq)) {
+        delay(1);
+        if (millis() - startWait > 200) {
+            Serial.println("VS1053: resetForNextTrack() DREQ timeout - continuing anyway");
+            break;
+        }
+    }
+
     writeRegister(0x02, 0x0000);        // bass/treble back to neutral
-    writeRegister(SCI_CLOCKF, 0x8800);  // restore 3.5x clock multiplier - critical, a
-                                         // reset can revert this to a default that's too
-                                         // slow to decode 44.1kHz audio in real time
+    writeRegister(SCI_CLOCKF, 0x8800);  // restore 3.5x clock multiplier
+
+    xSemaphoreGive(_resetMutex);
 }
 
 bool VS1053_Module::isReadyForData() {
@@ -256,13 +287,11 @@ void VS1053_Module::sendMP3Data(uint8_t* data, size_t len) {
     unsigned long chunkWaitWorst = 0;
 
     while (sent < len) {
-        // Wait for DREQ - yield EVERY iteration (UNCHANGED from baseline)
         unsigned long startWait = millis();
         unsigned long startWaitUs = micros();
         while (!digitalRead(_dreq)) {
-            vTaskDelay(1);  // Yield every loop (1ms)
+            vTaskDelay(1);
             
-            // Timeout after 100ms
             if (millis() - startWait > 100) {
                 Serial.println("VS1053: DREQ timeout");
                 return;
@@ -272,7 +301,6 @@ void VS1053_Module::sendMP3Data(uint8_t* data, size_t len) {
         chunkWaitTotal += waitUs;
         if (waitUs > chunkWaitWorst) chunkWaitWorst = waitUs;
         
-        // Send up to 32 bytes (UNCHANGED)
         size_t chunkSize = min((size_t)32, len - sent);
         
         SPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
@@ -286,17 +314,6 @@ void VS1053_Module::sendMP3Data(uint8_t* data, size_t len) {
         sent += chunkSize;
     }
 
-    // --- instrumentation only, below here ---
     _sendCount++;
     _totalWaitUs += chunkWaitTotal;
- //   if (chunkWaitWorst > _worstWaitUs) _worstWaitUs = chunkWaitWorst;
-
-    // Flag any single call where DREQ waits added up to more than 3ms
-    // total across this chunk's 32-byte transfers - a real glitch
-    // candidate at 44.1kHz.
-  //  if (chunkWaitTotal > 3000) {
-  //      _slowWaitCount++;
-        //Serial.printf("VS1053: [slow send] chunk #%lu: total DREQ wait %luus, worst single wait %luus\n",
-          //            (unsigned long)_sendCount, chunkWaitTotal, chunkWaitWorst);
-  //  }
 }
