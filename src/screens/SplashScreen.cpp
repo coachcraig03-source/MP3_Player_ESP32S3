@@ -98,7 +98,8 @@ void SplashScreen::update() {
 void SplashScreen::handleTouch(int x, int y) {
     if (mp3Button.hit(x, y)) {
         Serial.println("MP3 Mode selected");
-        screenManager.showMP3();
+        //screenManager.showMP3();
+        screenManager.showAlbumList();
     }
     else if (settingsButton.hit(x, y)) {
         Serial.println("Settings selected");
