@@ -132,10 +132,10 @@ void SD_Module::closeFile() {
         // Summary for this file, so we get one line per track instead of
         // spamming per-chunk - easier to correlate with an audible glitch
         // and to see the trend across an album.
-        Serial.printf("SD: [stats] reads=%lu slow(>3ms)=%lu worst=%luus\n",
-                      (unsigned long)_readCount,
-                      (unsigned long)_slowReadCount,
-                      (unsigned long)_worstReadUs);
+    //    Serial.printf("SD: [stats] reads=%lu slow(>3ms)=%lu worst=%luus\n",
+     //                 (unsigned long)_readCount,
+      //                (unsigned long)_slowReadCount,
+       //               (unsigned long)_worstReadUs);
     }
 }
 
@@ -158,8 +158,8 @@ size_t SD_Module::readChunk(uint8_t* buffer, size_t size) {
     // stall in this neighborhood is a real glitch candidate.
     if (dt > 3000) {
         _slowReadCount++;
-        Serial.printf("SD: [slow read] %lu bytes took %lu us (read #%lu)\n",
-                      (unsigned long)n, dt, (unsigned long)_readCount);
+  //      Serial.printf("SD: [slow read] %lu bytes took %lu us (read #%lu)\n",
+  //                    (unsigned long)n, dt, (unsigned long)_readCount);
     }
 
     return n;
