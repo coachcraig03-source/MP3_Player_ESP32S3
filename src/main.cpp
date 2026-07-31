@@ -290,16 +290,23 @@ if (!sdModule.begin()) {
 
 void loop() {
   // DO NOT call mp3Player.update() - it runs on Core 0
-  static bool wasPlaying = false;
-  bool nowPlaying = mp3Player.isPlaying();
 
-    // Only auto-advance if user didn't just manually advance
-    static unsigned long lastManualAdvance = 0;
-    if (wasPlaying && !nowPlaying && !mp3Player.isPlaying() && 
-        millis() - lastManualAdvance > 1000) {  // 1 second debounce
-        screenManager.handleSongEnd();
-    }
-    wasPlaying = nowPlaying;
+  // consumeNaturalEnd() (not the old isPlaying()-transition + debounce
+  // approach) - that older approach fired whenever isPlaying() went
+  // from true to false, which is also true during ANY deliberate
+  // stop-then-restart (e.g. KidScreen::showAlbum()'s own
+  // requestStop()+softReset() sequence when a new album/NFC tag loads
+  // while something was already playing). The 1-second debounce only
+  // covered manual touch-driven advances, not NFC-triggered ones, so
+  // an NFC tag placed mid-playback could catch that transient window
+  // and call handleSongEnd() before the new album's first track had
+  // even started - observed as "skips straight to track 2".
+  // consumeNaturalEnd() only reports true for a genuine end-of-file,
+  // and is cleared by any play()/requestStop() in between, so a
+  // deliberate interruption can never be mistaken for a real end here.
+  if (mp3Player.consumeNaturalEnd()) {
+      screenManager.handleSongEnd();
+  }
 
   // Update screen animations
   screenManager.update();
@@ -315,7 +322,6 @@ void loop() {
     TS_Point p = touchScreen.getPoint();
     if (p.x != 0 && p.y != 0) {
       screenManager.handleTouch(p.x, p.y);
-      lastManualAdvance = millis();  // Mark manual advance time    
     }
   }
 }

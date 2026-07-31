@@ -18,6 +18,12 @@ SplashScreen::SplashScreen(ScreenManager& manager, TFT_Module& tftModule)
 void SplashScreen::begin() {
     auto display = tft.getTFT();
     
+    // Defensive reset - don't depend on other screens resetting the font
+    // before navigating here. Without this, if the previous screen left
+    // a custom font active (e.g. MP3AlbumList's FreeSerif9pt7b), this
+    // screen would inherit it unexpectedly.
+    display->setFont(&fonts::Font0);
+    
     // Clear screen
     display->fillScreen(TFT_BLACK);
     
@@ -98,7 +104,6 @@ void SplashScreen::update() {
 void SplashScreen::handleTouch(int x, int y) {
     if (mp3Button.hit(x, y)) {
         Serial.println("MP3 Mode selected");
-        //screenManager.showMP3();
         screenManager.showAlbumList();
     }
     else if (settingsButton.hit(x, y)) {

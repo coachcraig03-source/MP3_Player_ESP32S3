@@ -10,7 +10,8 @@
 
 MP3Player::MP3Player(SD_Module& sd, VS1053_Module& audio)
     : sdModule(sd), audioModule(audio), state(IDLE), needsOpen(false),
-      queueHead(0), queueTail(0), queueCount(0), eofReached(false)
+      queueHead(0), queueTail(0), queueCount(0), eofReached(false),
+      naturalEnd(false)
 {
 }
 
@@ -22,6 +23,17 @@ void MP3Player::resetQueue() {
 }
 
 bool MP3Player::play(const char* path) {
+    // A fresh play() call always supersedes any stop that hasn't been
+    // serviced yet. Without this, a stopRequested left over from
+    // whatever was happening a moment ago (e.g. leaving a different
+    // screen) can land in the same update() tick as this new track's
+    // needsOpen, producing a transient stop+reopen right as playback
+    // starts - long enough for anything polling end-of-track state to
+    // misread it as "already finished" and skip straight to the next
+    // track before this one ever really began.
+    stopRequested = false;
+    naturalEnd = false;
+
     strncpy(pendingPath, path, sizeof(pendingPath));
     needsOpen = true;
     return true;
@@ -52,6 +64,7 @@ void MP3Player::stop() {
 }
 
 void MP3Player::requestStop() {
+    naturalEnd = false;
     stopRequested = true;
 }
 
@@ -93,7 +106,17 @@ void MP3Player::update() {
     }
     
     if (needsOpen) {
-        needsOpen = false;
+        // needsOpen is cleared at the END of this block now, not the
+        // start. Clearing it first left a real window - however brief -
+        // where needsOpen was already false but state hadn't been set
+        // to PLAYING yet (openFile()/setSampleRate() take actual time:
+        // an SD open plus a VS1053 register write with its own DREQ
+        // wait). hasEnded() is state==IDLE && !needsOpen - during that
+        // window both were true, with no track having actually ended.
+        // Usually too narrow to matter, but MP3SongList polls
+        // hasEnded() every loop tick on the other core, so occasionally
+        // the timing lined up and it read "ended" moments after a track
+        // had just started, skipping straight to the next one.
         resetQueue();
         if (sdModule.openFile(pendingPath)) {
             Serial.printf("MP3Player: Starting playback\n");
@@ -106,6 +129,7 @@ void MP3Player::update() {
             // start with a small cushion rather than from completely empty.
             fillQueue();
         }
+        needsOpen = false;
         return;
     }
     
@@ -136,10 +160,23 @@ void MP3Player::update() {
         // Send the oldest queued chunk, if any.
         if (!sendNextQueued()) {
             if (eofReached) {
+                // This is the ONLY place a track end is real - readChunk()
+                // genuinely returned 0, nothing left to send. Distinct
+                // from state just being IDLE, which is also true during
+                // any deliberate stop-then-restart.
+                naturalEnd = true;
                 stop();
             }
             break;
         }
         if (state != PLAYING) break;
     }
+}
+
+bool MP3Player::consumeNaturalEnd() {
+    if (naturalEnd) {
+        naturalEnd = false;
+        return true;
+    }
+    return false;
 }

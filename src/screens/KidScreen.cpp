@@ -44,6 +44,7 @@ KidScreen::KidScreen(ScreenManager& manager, TFT_Module& tftModule, VS1053_Modul
       sdModule(sd),  // Add this line
       albumLoaded(false),
       isPlaying(false),
+      albumLoadStartMs(0),
       prevButton(40, 240, 80, 60, "<<"),
       playPauseButton(200, 240, 80, 60, "||"),
       nextButton(360, 240, 80, 60, ">>"),
@@ -133,6 +134,18 @@ void KidScreen::update() {
 }
 
 void KidScreen::handleTouch(int x, int y) {
+    // Ignore touches for a short window right after an NFC card
+    // triggers showAlbum(). Placing a card appears to register a
+    // phantom touch on the panel (physical proximity to the reader) -
+    // reliably landing on nextButton and skipping track 1 before it
+    // ever really started. A real user isn't legitimately tapping
+    // playback controls in the same instant they're placing a card.
+    const unsigned long TOUCH_COOLDOWN_MS = 500;
+    if (millis() - albumLoadStartMs < TOUCH_COOLDOWN_MS) {
+        Serial.println("KidScreen: Ignoring touch during NFC transition cooldown");
+        return;
+    }
+
     // Check volume slider first (always available)
     
     //Serial.printf("KidScreen got touch: (%d,%d)\n", x, y);
@@ -378,6 +391,16 @@ albumDir.rewind();
 
     extern MP3Player mp3Player;
     mp3Player.play(firstTrack);
+
+    // Stamp the touch cooldown here, at the very end - not at the start
+    // of this function. showAlbum() itself blocks for 600ms-1000ms+
+    // (two explicit delays, a real SD directory scan, a synchronous
+    // JPEG decode) - loop() can't process a queued touch until this
+    // function returns, so stamping at the start meant the cooldown
+    // window could already be expired by the time a touch actually got
+    // processed, defeating the guard entirely. Stamping here means the
+    // cooldown counts from when the screen is actually touchable again.
+    albumLoadStartMs = millis();
 }
 
 void KidScreen::clearAlbum() {

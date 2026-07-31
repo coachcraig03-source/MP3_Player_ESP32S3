@@ -1,11 +1,5 @@
 // =====================================================================
-//  MP3AlbumList.h - Paginated album list screen (UI-only prototype)
-//
-//  Purpose: get the layout, font size, row height, and pagination feel
-//  right on real hardware before wiring in real album data. Only the
-//  Back button and page navigation are functional; album rows are not
-//  tappable yet (no selection logic - that comes once the UI is settled
-//  and this replaces the album-browsing half of MP3Screen).
+//  MP3AlbumList.h - Paginated album list screen
 // =====================================================================
 
 #ifndef MP3_ALBUM_LIST_H
@@ -16,10 +10,11 @@
 
 class ScreenManager;
 class TFT_Module;
+class SD_Module;
 
 class MP3AlbumList : public BaseScreen {
 public:
-    MP3AlbumList(ScreenManager& manager, TFT_Module& tft);
+    MP3AlbumList(ScreenManager& manager, TFT_Module& tft, SD_Module& sd);
 
     void begin() override;
     void update() override;
@@ -27,27 +22,17 @@ public:
 
 private:
     static const int ROWS_PER_PAGE = 7;
-    static const int PLACEHOLDER_COUNT = 13;  // enough to span 3 pages for testing
+    static const int MAX_ALBUMS = 50;
 
     void drawPage();
     void nextPage();
     void prevPage();
+    void loadAlbumsFromSD();
 
-    const char* placeholderAlbums[PLACEHOLDER_COUNT] = {
-        "Abba - Gold (Greatest Hits)",
-        "Bob Seger - Against the Wind",
-        "Bob Seger - Greatest Hits",
-        "Bob Seger - Night Moves",
-        "Bon Jovi - The Best of - Cross Road",
-        "Boston - Greatest Hits",
-        "Bruce Springsteen - Born To Run",
-        "Bruce Springsteen - The River",
-        "Carol King - Tapestry",
-        "Cher - Heart of Stone",
-        "Doobie Brothers - Listen to The Music",
-        "Eagles - Hotel California",
-        "Supertramp - Crime Of The Century"
-    };
+    SD_Module& sdModule;
+
+    char albumNames[MAX_ALBUMS][64];
+    int albumCount;
 
     int currentPage;
     int totalPages;

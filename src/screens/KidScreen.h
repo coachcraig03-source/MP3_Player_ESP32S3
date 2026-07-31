@@ -48,6 +48,13 @@ private:
     char currentAlbum[40];
     bool albumLoaded;
     bool isPlaying;
+
+    // Touches are ignored for a short window after showAlbum() starts -
+    // see handleTouch(). Placing an NFC card near the touchscreen (the
+    // reader and panel are physically close) appears to register a
+    // phantom touch that happened to land on nextButton every time,
+    // reliably skipping the first track.
+    unsigned long albumLoadStartMs;
     
     // Playback control buttons
     UIButton prevButton;

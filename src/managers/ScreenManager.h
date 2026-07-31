@@ -9,6 +9,7 @@
 #include "../screens/FTPUploadScreen.h"
 #include "../screens/BluetoothScreen.h"
 #include "../screens/MP3AlbumList.h"
+#include "../screens/MP3SongList.h"
 
 class TFT_Module;
 class BaseScreen;
@@ -35,7 +36,8 @@ public:
     // Navigation helpers
     void showSplash();
     void showMP3();
-    void showAlbumList();   // ADDED - new paginated album list (UI prototype)
+    void showAlbumList();   // new paginated album list (UI prototype)
+    void showSongList();    // new Now Playing / song list screen
     void showKids();
     void showCalibration();
     void handleSongEnd(); 
@@ -48,6 +50,7 @@ public:
     // Access to screens (for inter-screen communication)
     KidScreen* getKidScreen() { return kidScreen; }
     MP3Screen* getMP3Screen() { return mp3screen; }
+    MP3SongList* getSongListScreen() { return mp3SongListScreen; }
     
     // Get TFT reference for screens
     TFT_Module& getTFT() { return tft; }
@@ -59,7 +62,8 @@ private:
     SettingsScreen* settingsScreen;
     WriteTagScreen* writeTagScreen;
     FTPUploadScreen* ftpUploadScreen;
-    MP3AlbumList* mp3AlbumListScreen;   // ADDED
+    MP3AlbumList* mp3AlbumListScreen;
+    MP3SongList* mp3SongListScreen;
 
     
     TFT_Module& tft;
